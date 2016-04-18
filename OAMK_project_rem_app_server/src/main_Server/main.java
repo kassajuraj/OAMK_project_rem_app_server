@@ -10,9 +10,9 @@ public class main {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-	//	server s = new server();
-	//	s.makeEasyGuiForServer();
-	//	s.runServer();
+		server s = new server();
+		s.makeEasyGuiForServer();
+		s.runServer();
 
 	}
 
