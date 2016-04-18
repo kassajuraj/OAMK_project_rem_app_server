@@ -1,12 +1,12 @@
 package main_Server;
-import java.sql.SQLException;
+//import java.sql.SQLException;
 
 /**
  * 
  * @author juraj
  *
  */
-public class main {
+public class main_rem_app_server {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
