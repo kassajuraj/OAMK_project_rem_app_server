@@ -126,7 +126,7 @@ public class clientThread extends Thread{
 	 * method for sending information about timetables when the user sign in
 	 */
 	private void sendTimetables(){
-		 for (medicineTimetables mtt : commands.user.returnArrayListOfTimetables()){
+		 for (medicineTimetables mtt : commands.returnUser().returnArrayListOfTimetables()){
 			  /*message form "-infoTimetables;IDOftimetable;dateFrom;timeFrom;dateUntil;timeUntil;active;"*/
 			  message = "-infoTimetables;"+mtt.returnIdOfTimetable()+";"+mtt.returnDate("from")+";"+mtt.returnTime("from")+";"+mtt.returnDate("to")+";"+mtt.returnTime("to")+";"+mtt.returnActive()+";";
 			  sendMessage(message);
@@ -139,7 +139,11 @@ public class clientThread extends Thread{
 				  sendMessage(notificationMessage);
 			  }
 		  }
-		  sendMessage("-infoUserDone;"+commands.user.returnID()+";");
+		  sendMessage("-infoUserDone;"+commands.returnUser().returnID()+";");
+	}
+	
+	public CommandsForServerCommunication returnCommandsForCommunication(){
+		return this.commands;
 	}
 	
 }

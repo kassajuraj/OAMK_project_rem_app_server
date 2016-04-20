@@ -14,8 +14,8 @@ import person.Person;
 public class CommandsForServerCommunication {
 	
 	/*make database class which is connection to external database*/
-	database db = new database();
-	public Person user = null;
+	private database db = new database();
+	private Person user = null;
 	/**
 	 * Constructor
 	 */
@@ -215,5 +215,9 @@ public class CommandsForServerCommunication {
 				s = "-infoContactPerson;"+contactPerson.returnID()+";"+contactPerson.returnName()+";"+contactPerson.returnSurname()+";"+contactPerson.returnSex()+";"+contactPerson.returnTelNumber()+";";
 
 		return s;
+	}
+	
+	public Person returnUser(){
+		return this.user;
 	}
 }

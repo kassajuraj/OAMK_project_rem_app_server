@@ -1,5 +1,6 @@
 package main_Server;
 import java.sql.*;
+import java.util.ArrayList;
 
 import person.Person;
 import person.medicine;
@@ -764,6 +765,124 @@ public class database {
 			e.printStackTrace();
 		}
 	   return false;
+	}
+	
+	Statement stmtNotifications;
+	Connection connect;
+	
+	public ArrayList<Integer> controlNotifications(String TodayDate, String nowTime) {
+		// TODO Auto-generated method stub
+		ArrayList<Integer> listOfIDs = new ArrayList<Integer>();
+		
+		try (Connection connection = DriverManager.getConnection(url, username, password)) {
+		       connect = connection;
+			   System.out.println("Database connected!");
+			   System.out.println("Creating statement...");
+			   stmtNotifications = connect.createStatement();
+			   System.out.println("Statement has been created...");
+
+			   OurDateClass odc = new OurDateClass();
+			   int c = -1;
+			   
+			   ArrayList<notification> todaysNotifications = this.selectTodaysNotifications(TodayDate);
+			   
+			   for(notification n : todaysNotifications){
+				   
+				   c = odc.compareTimes(n.returnNotificationTimePlusMin(10), nowTime);
+				   if(c == 2 || c == 0){
+					   listOfIDs = this.criticalList();
+				   }
+				   else{
+					   c = odc.compareTimes(n.returnNotificationTimePlusMin(5), nowTime);
+					   if(c == 2 || c == 0)
+						   this.updateNotifications(TodayDate, n.returnNotificationTime(), "critical");
+					   else{
+						   c = odc.compareTimes(n.returnNotificationTime(), nowTime);
+						   if(c == 2 || c == 0)
+							   this.updateNotifications(TodayDate, n.returnNotificationTime(), "active");
+					   	}
+					  }
+			   }
+			   //TODO look for notifications with with date = today, status = new, time <= now   - make update 
+			  // 
+			   //TODO look for notifications with date = today, status = active, time+5 <= now   - make update
+			   
+			   //TODO look for notifications with date = today, status = critical, time+10 <= now - return ArrayList of IDs of users to send message (contact persons) 
+			   
+			   
+			   
+			   stmtNotifications.close();
+			   connect.close();
+			   
+		   } catch (SQLException e) {
+		       throw new IllegalStateException("Cannot connect the database!", e);
+		   }
+		   try {
+		       Class.forName("com.mysql.jdbc.Driver");
+		       System.out.println("Driver loaded!");
+		   } catch (ClassNotFoundException e) {
+		       throw new IllegalStateException("Cannot find the driver in the classpath!", e);
+		   }
+		   System.out.println("Goodbye!");
+		   
+		return null;
+	}
+	/**
+	 * 
+	 * @return
+	 */
+	private ArrayList<Integer> criticalList() {
+		ArrayList<Integer> ALI = new ArrayList<Integer>();
+		
+		try{
+			String sql = "SELECT * FROM remmem_app.notification_timetable where status = 'critical'";
+			ResultSet rs = stmtNotifications.executeQuery(sql);
+			while (rs.next()){
+				//TODO add users id to arraylist 
+			//	ALI.add();
+			}
+			}catch(SQLException e){
+				System.out.println("notification chyba "+e);
+			}
+		return ALI;
+	}
+	/**
+	 * 
+	 * @param todayDate
+	 * @param returnNotificationTime
+	 * @param string
+	 */
+	private void updateNotifications(String todayDate, String returnNotificationTime, String string) {
+		System.out.println("updating database");
+		String SQL = "update `remmem_app`.`notification_timetable` set `status` = '"+string+"'";
+		try{
+		stmtNotifications.executeUpdate(SQL);
+		}catch(SQLException e){
+			System.out.println("error sql "+e);
+		}
+	}
+	/**
+	 * 
+	 * @param returnDate
+	 * @return
+	 */
+	private ArrayList<notification> selectTodaysNotifications(String returnDate) {
+		ArrayList<notification> ALN = new ArrayList<notification>();
+		System.out.println("selecting the notifications...");
+		try{
+			String sql = "SELECT * FROM remmem_app.notification_timetable where date = '"+returnDate+"'";
+			ResultSet rs = stmtNotifications.executeQuery(sql);
+			while (rs.next()){
+				notification not = new notification();
+				not.setNotificationDate(rs.getString("date"));
+				not.setNotificationTime(rs.getString("time"));
+				not.setNotificationStatus(rs.getString("status"));
+				ALN.add(not);
+			}
+			}catch(SQLException e){
+				System.out.println("notification chyba "+e);
+			}
+		return ALN;
 	}
 	
 }

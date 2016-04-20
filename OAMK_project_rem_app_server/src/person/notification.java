@@ -1,4 +1,7 @@
 package person;
+
+import main_Server.OurDateClass;
+
 /**
  * 
  * @author juraj
@@ -43,4 +46,12 @@ public class notification {
 		return this.status;
 	}
 
+	
+	public String returnNotificationTimePlusMin(int min){
+		OurDateClass d = new OurDateClass();
+		d.setTimeFromTimeformat(time);
+		d.setMinutes(min + d.returnMinutes());
+		
+		return d.returnTime();
+	}
 }

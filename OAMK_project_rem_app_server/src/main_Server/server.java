@@ -3,6 +3,8 @@ import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Date;
+
 import javax.swing.*;
 import ConsolePackage.TextAreaOutputStream;
 
@@ -15,7 +17,8 @@ public class server {
 	
 	private ServerSocket providerSocket;
 	private String message;
-	
+	private database db = new database();
+	ArrayList<Integer> IdsOfUserToBeNotify = new ArrayList<Integer>();
 	/**
 	 * Constructor 
 	 */
@@ -71,6 +74,19 @@ public class server {
 	}
 	
 	
+	void MonitoringNotifications(){
+		//TODO  New thread with endless loop which will control actual time and compare with arrayList of notifications id database
+		Thread monitorNotificationThread = new Thread(){
+			public void run(){
+				OurDateClass now = new OurDateClass(new Date());
+				IdsOfUserToBeNotify = db.controlNotifications(now.returnDate(), now.returnTime());
+				
+			}
+		};
+		monitorNotificationThread.start();
+		
+	}
+	
 	/**
 	 * Start the server and make arraylist of connection everytime when new connection start it like the new clientThread 
 	 */
@@ -100,6 +116,7 @@ public class server {
 		            (threads[i] = new clientThread(clientSocket, threads, i)).start();
 		            break;
 		          }
+		          //threads[i].returnCommandsForCommunication().returnUser().returnID();
 		        }
 		        if (i == maxClientsCount) {
 		          PrintStream os = new PrintStream(clientSocket.getOutputStream());
