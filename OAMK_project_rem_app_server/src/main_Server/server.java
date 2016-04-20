@@ -13,9 +13,8 @@ import ConsolePackage.TextAreaOutputStream;
 
 public class server {
 	
-	ServerSocket providerSocket;
-	ArrayList<clientThread> connectionThreadList = new ArrayList<clientThread>();
-	String message;
+	private ServerSocket providerSocket;
+	private String message;
 	
 	/**
 	 * Constructor 
@@ -81,18 +80,38 @@ public class server {
 		
 	try{
 		/*creating a server socket */
-		providerSocket = new ServerSocket(2004, 10);
+		Socket clientSocket = null;
+		final int maxClientsCount = 10;
+		final clientThread[] threads = new clientThread[maxClientsCount];
+		 int portNumber = 2004;
+		 providerSocket = new ServerSocket(portNumber);
+		
 		/*wait for connection*/
 		System.out.println("Server is running...");
 		System.out.println("Waiting for connection...");
 		
-		//TODO make database like parameter for every threadConnection with client 
-		connectionThreadList.add(new clientThread(providerSocket, providerSocket.accept()));
 		
-		//TODO endless loop and in this loop will be the loop for control all clientThreads 
-		//TODO make loop which will control all clientThreads if will some disconnect remove it
-		
-		
+		 while (true) {
+		      try {
+		        clientSocket = providerSocket.accept();
+		        int i = 0;
+		        for (i = 0; i < maxClientsCount; i++) {
+		          if (threads[i] == null) {
+		            (threads[i] = new clientThread(clientSocket, threads, i)).start();
+		            break;
+		          }
+		        }
+		        if (i == maxClientsCount) {
+		          PrintStream os = new PrintStream(clientSocket.getOutputStream());
+		          os.println("Server too busy. Try later.");
+		          os.close();
+		          clientSocket.close();
+		        }
+		      } catch (IOException e) {
+		        System.out.println(e);
+		      }
+		    }
+
 		}catch( IOException ioException){
 			ioException.printStackTrace();
 		}
