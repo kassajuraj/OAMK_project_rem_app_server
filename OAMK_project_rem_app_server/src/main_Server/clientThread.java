@@ -122,7 +122,9 @@ public class clientThread extends Thread{
 			ioException.printStackTrace();
 		}
 	}
-	
+	/**
+	 * method for sending information about timetables when the user sign in
+	 */
 	private void sendTimetables(){
 		 for (medicineTimetables mtt : commands.user.returnArrayListOfTimetables()){
 			  /*message form "-infoTimetables;IDOftimetable;dateFrom;timeFrom;dateUntil;timeUntil;active;"*/
