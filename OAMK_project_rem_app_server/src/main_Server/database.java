@@ -1,4 +1,3 @@
-//package serverPart;
 package main_Server;
 import java.sql.*;
 
@@ -44,10 +43,6 @@ public class database {
 			   stmt = conn.createStatement();
 			   System.out.println("Statement has been created...");
 
-			/*calling the method which is looking for the medicine name 
-			 * this method should be called everytime when the input string name will be changed */
-			   //TODO call this method everytime when the name of medicine will be changed 
- 
 			   b = selectActionWithDB(ch, receivedMessage);
 			   if(b==true)
 				   this.CloseConnectionAndStatment();
@@ -96,8 +91,8 @@ public class database {
 	}
 	
 	/**
-	 * This method is called when the connection to databse is successful and inside the method is way how to chose right action with incoming message
-	 * @param symbol = first symbol of message helps to make disicion 
+	 * This method is called when the connection to database is successful and inside the method is way how to chose right action with incoming message
+	 * @param symbol = first symbol of message helps to make decision 
 	 * @param s = all message received from client 
 	 * @return true = all action were right, false = was some error during the action 
 	 * @throws SQLException
@@ -114,10 +109,57 @@ public class database {
 		case '%' : AllRight = this.LookForMedicineName(s); break;
 		case '-' : AllRight = this.recordAllUsersData(s); break;
 		case '*' : AllRight = this.workWithTimetablesInDatabase(s); break;
-		default : //TODO invalid action
+		case '^' : AllRight = this.updatePersonalData(s); break;
+		default :  {AllRight = false; System.out.println("invalid message come to database!");} break; 
 		}
 		return AllRight;
 	}
+	/**
+	 * method to know if was user's profile updated in database 
+	 * @param s
+	 * @return
+	 */
+	private boolean updatePersonalData(String s) {
+		/*(message form "^UpdateMyData;ID;name;surname;sex;tel.number;)"*/
+		if(this.updateMyData(s)){
+			messageToReturn = "^MyUserUpdateData;"+person.returnID()+";"+person.returnName()+";"+person.returnSurname()+";"+person.returnSex()+";"+person.returnTelNumber()+";";
+			return true;
+		}
+		
+		return false;
+	}
+	/**
+	 * method to update users profile in database 
+	 * @param s
+	 * @return
+	 */
+	private boolean updateMyData(String s) {
+		int id = Integer.parseInt(this.showStringNumber(s, 1));
+		if(id == person.returnID()){
+			System.out.println("Everything is correct the ids are the same");
+		
+			person.setName(this.showStringNumber(s, 2));
+			person.setSurname(this.showStringNumber(s, 3));
+			person.setSex(this.showStringNumber(s, 4));
+			person.setTelNumber(this.showStringNumber(s, 5));
+			System.out.println("Updating my data profile...");
+			String sqlI = "update `remmem_app`.`userslist` set `name` = '"+person.returnName()+"', `surname` = '"+person.returnSurname()+"', `sex` = '"+person.returnSex()+"', `tel_Number` = '"+person.returnTelNumber()+"' where id ='"+person.returnID()+"'";
+			try{
+				stmt.executeUpdate(sqlI);
+			}catch(SQLException e){
+				System.out.println("Cannot update personal data "+e);
+				return false;
+			}
+				System.out.println("Record has been updated...");
+				return true;
+		}
+		return false;
+	}
+	/**
+	 * Method which control if is message right if true then inserting the notifications came from client to database table 
+	 * @param s
+	 * @return false if message has bad form else true
+	 */
 	private boolean notificationInDatabase(String s) {
 		
 		if(s.contains("!addNotification;"))
@@ -126,13 +168,16 @@ public class database {
 
 		return false;
 	}
+	/**
+	 * Method inserting the notifications to database table and connecting the notifications with the right timetable
+	 * @param receiveMessage
+	 * @return false if SQLexception else return true 
+	 */
 	private boolean insertNotificationsToDatabase(String receiveMessage) {
 		/*"!addNotification;timetableId;notificationDate;notificationTime;notificationStatus;"*/
 		notification n = new notification();
 		medicineTimetables lastTimetable = person.returnTimetable(person.returnArrayListOfTimetables().size()-1);
 		if(lastTimetable.returnIdOfTimetable() == Integer.parseInt(this.showStringNumber(receiveMessage, 1))){
-				//System.out.println("Id of table is the same");
-		
 			n.setNotificationDate(this.showStringNumber(receiveMessage, 2));
 			n.setNotificationTime(this.showStringNumber(receiveMessage, 3));
 			n.setNotificationStatus(this.showStringNumber(receiveMessage, 4));
@@ -151,7 +196,11 @@ public class database {
 		
 		return true;
 	}
-	
+	/**
+	 * Method takes the right action with the timetable from message info 
+	 * @param s
+	 * @return
+	 */
 	private boolean workWithTimetablesInDatabase(String s) {
 		boolean b = false;
 		
@@ -159,12 +208,57 @@ public class database {
 				b = this.insertNewTimetable(s);
 				messageToReturn = "*timetableCreated;"+person.returnID()+";"+person.returnTimetable(person.returnArrayListOfTimetables().size()-1).returnIdOfTimetable()+";";
 		}
-		// TODO if (*editTimetable;) find timetable, and update it 
-		// TODO if (*removeTimetable;) find timetable and remove it 
+		else if (s.contains("*removeTimetable;")){
+			int IdUser = Integer.parseInt(this.showStringNumber(s, 1));
+			int IdTimetable = Integer.parseInt(this.showStringNumber(s, 2));
+			b = this.removeTimetable(IdUser, IdTimetable);
+			messageToReturn = "*timetableDeleted;";
+		}
 				
 		return b;
 	}
-	
+	/**
+	 * Method for delete timetable from database (firstly remove the notifications if they are removed then remove the timetable)
+	 * @param idUser
+	 * @param idTimetable
+	 * @return
+	 */
+	private boolean removeTimetable(int idUser, int idTimetable) {
+		
+		if(this.removeNotifications(idTimetable)){
+			System.out.println("Deleting the timetable");
+			String sql = "DELETE FROM remmem_app.all_timetables where id_user = '"+idUser+"' and id_timetable ='"+idTimetable+"'";
+			try{
+				stmt.executeUpdate(sql);
+			}catch(SQLException e){
+				System.out.println("Cannot delete the table "+idTimetable+" SQL Exception "+e);
+				return false;
+			}
+		}
+		return true;
+	}
+	/**
+	 * Method for delete notifications from database 
+	 * @param idTimetable
+	 * @return
+	 */
+	private boolean removeNotifications(int idTimetable) {
+		System.out.println("Deleting the notification");
+		String sql = "DELETE FROM remmem_app.notification_timetable where id_timetable = '"+idTimetable+"'"; 
+		try{
+		stmt.executeUpdate(sql);
+		System.out.println("notification has been deleted ");
+		}catch(SQLException e){
+			System.out.println("Cannot delete the notifications  SQL Exception "+e);
+			return false;
+		}
+		return true;
+	}
+	/**
+	 * Method for inserting new timetable from message firstly find the medicine in timetable and fill medicine atribute then find insert this timetable to database in the end monitor if timetable exists
+	 * @param message
+	 * @return true if the timetable has been inserted and false if not 
+	 */
 	private boolean insertNewTimetable(String message) {
 		/*message form "*addTimetable;IDUser;medicineName;medicineStrength;dateFrom;timeFrom;dateUntil;timeUntil;"*/
 		boolean inserted = false;
@@ -173,7 +267,6 @@ public class database {
 		pills.setNameOfMedicine(showStringNumber(message, 2));
 		pills.setStrength(this.showStringNumber(message, 3));
 		pills = this.fillPillInfo(pills);
-		//
 		medicineTimetables table = new medicineTimetables();
 		table.setDate("from", this.showStringNumber(message, 4));
 		table.setTime("from", this.showStringNumber(message, 5));
@@ -192,7 +285,11 @@ public class database {
 		
 		return inserted;
 	}
-	
+	/**
+	 * Control if timetable exists in the database 
+	 * @param table
+	 * @return true if timetable has been found otherwise false 
+	 */
 	private boolean timetableExists(medicineTimetables table) {
 		
 		System.out.println("looking for the ID of timetable");
@@ -213,7 +310,11 @@ public class database {
 		}
 		return false;
 	}
-	
+	/**
+	 * Method for insert the timetable to the database using SQL 
+	 * @param table
+	 * @return true if insert false if some SQLException
+	 */
 	private boolean insertNewTimetable(medicineTimetables table) {
 		
 		System.out.println("inserting new timetable");
@@ -228,7 +329,11 @@ public class database {
 		return true;
 	}
 	
-	
+	/**
+	 * method for fill abtribute medicine from the databse table medicine using the SQL 
+	 * @param pills
+	 * @return medicine 
+	 */
 	private medicine fillPillInfo(medicine pills) {
 		
 		System.out.println("reading all data about medicine");
@@ -265,16 +370,12 @@ public class database {
 	    messageToReturn = "%medicineNames;";
 	    String MedicineName = "null";
 	      while(rs.next()){
-		         /*Retrieve by column name*/
-	    	  //	rs.getString("DrugName");
 	    	  	MedicineName = rs.getString("DrugName")+"~~"+rs.getString("Strength"); 
 		        messageToReturn = messageToReturn+ MedicineName+";";
 		         	if(MedicineName != "null")
 		         		founded = true;
 		      }
 		     rs.close();
-	//      System.out.println(founded);
-	//	      System.out.println(messageToReturn); 
 	 return founded;
 	}
 	
@@ -336,7 +437,6 @@ public class database {
 		    id = rs.getInt("id");
 		    if (id != 0){ 
 		    	messageToReturn = "~id;"+id;
-		    	//TODO insert ID to User's id in user's list 
 		    	return true;
 		    }
 		}else{
@@ -378,11 +478,11 @@ public class database {
 			try{
 				/*add id of contact person to the profile of user*/
 				int contactPersonID = 0;
-					contactPersonID = this.isContactPersonExists(/*messageFromEditOwnProfile*/); 
+					contactPersonID = this.isContactPersonExists(); 
 					/*if contact person is not exists (contactPersonID == 0) then make new contact person and return the ID of this new contact person*/		
 					if(contactPersonID == 0){
-						this.makeContactPerson(/*messageFromEditOwnProfile*/); 
-						contactPersonID = returnIdFromContactPerson(/*messageFromEditOwnProfile*/);
+						this.makeContactPerson(); 
+						contactPersonID = returnIdFromContactPerson();
 					}
 					/*update the "userslist" table */
 					System.out.println("Updating id of Contact in the 'userslist' table...");
@@ -392,6 +492,7 @@ public class database {
 							System.out.println("Record has been updated...");
 			}catch(SQLException e){
 				System.out.println("Cannot edit Contact Person data");
+				return false;
 			}
 		}
 		return true;
@@ -402,10 +503,10 @@ public class database {
 	 * @param messageFromEditContactPerson form "#EditContactPersonDone;id;name;surname;sex;tel.number;"
 	 * @return ID of contact person 
 	 */
-	private int isContactPersonExists(){
+	private int isContactPersonExists()throws SQLException{
 		int id = 0;
 		/*look for the contact person using all atributes in contact person table*/
-		try{
+
 			String sql = "SELECT id_ContactPerson FROM remmem_app.contactpersonlist where name = '"+person.returnContactPerson().returnName()+"' and surname = '"+person.returnContactPerson().returnSurname()+"' and sex = '"+person.returnContactPerson().returnSex()+"' and tel_number = '"+person.returnContactPerson().returnTelNumber()+"'";
 			ResultSet rs = stmt.executeQuery(sql);
 			if (rs.next()) {
@@ -413,9 +514,6 @@ public class database {
 				if (id != 0)
 					System.out.println("contact person has been found");
 			}
-		}catch(SQLException e){
-			System.out.println("SQL eror finding contact person "+e);
-		}
 		    return id;
 	}
 	
@@ -423,17 +521,15 @@ public class database {
 	 * method is making the new contact person in "contactpersonlist" table firstly it is looking for the atributes in "userslist" if find some user then insert this user to "contactPersonlist: else make new contact person list
 	 * @param messageFromEditContactPerson form "#EditContactPerson;id;nameContactPerson;surnameContactPerson;sexContactPerson;tel.NumberContactPerson"
 	 */
-	private void makeContactPerson(){
+	private void makeContactPerson()throws SQLException{
 
-		try{
+
 			/*if not found then insert new contact person*/
 			System.out.println("Inserting records into the 'contactpersonlist' table...");
 			String sqlI = "INSERT INTO `remmem_app`.`contactpersonlist` (`name`, `surname`, `sex`, `tel_number`) VALUES ('"+person.returnContactPerson().returnName()+"', '"+person.returnContactPerson().returnSurname()+"', '"+person.returnContactPerson().returnSex()+"', '"+person.returnContactPerson().returnTelNumber()+"')";
 			stmt.executeUpdate(sqlI);
 			System.out.println("Contact person has been inserted...");
-		}catch(SQLException e){
-			System.out.println("SQL error inserting the contactPerson "+e);
-		}
+
 	}
 	/**
 	 * 
@@ -489,7 +585,6 @@ public class database {
 			String sql = "SELECT id, name, surname, sex, tel_number FROM remmem_app.userslist where id = '"+person.returnID()+"'";
 			ResultSet rs = stmt.executeQuery(sql);
 			if (rs.next()) {
-				//ID = rs.getInt("id");
 				person.setName(rs.getString("name"));
 				person.setSurname(rs.getString("surname"));
 				person.setSex(rs.getString("sex"));
@@ -534,14 +629,11 @@ public class database {
 	}
 	
 	/**
-	 * 
+	 * Method which is record the data about user's timetables to the object in server when the user has been sign in 
 	 * @param ID
 	 */
 	private void recordMedicineTimetableData(int ID){
-		//TODO
-		//int idMedicine;
 		try{
-			//String sql = "SELECT id_timetable, id_user, id_medicine, date_from, time_from, date_until, time_until, active FROM remmem_app.all_timetables where id_user = '"+ID+"'";
 			String sql = "SELECT * FROM remmem_app.all_timetables where id_user = '"+ID+"'";
 			ResultSet rs = stmt.executeQuery(sql);
 		
@@ -554,18 +646,17 @@ public class database {
 				timetable.setDate("to", rs.getString("date_until"));
 				timetable.setTime("to", rs.getString("time_until"));
 				timetable.setActive(rs.getString("active"));
-			
-		//	this.recordNotifications(timetable);
-		//	medicine m = this.recordMedicine(idMedicine);	
-		//	timetable.setMedicine(m);
-		//	System.out.println("Pridavam tabulku "+timetable.returnIdOfTimetable());
+
 				person.returnArrayListOfTimetables().add(timetable);
 				}
 			}catch(SQLException e){
 			System.out.println("timetable chyba "+e);
 		}
 	}
-	
+	/**
+	 * method which record the data from database to object notification in arrayList of notifications 
+	 * @param timetable
+	 */
 	private void recordNotifications(medicineTimetables timetable){
 		int idTimetable = timetable.returnIdOfTimetable();
 		
@@ -577,8 +668,7 @@ public class database {
 			not.setNotificationDate(rs.getString("date"));
 			not.setNotificationTime(rs.getString("time"));
 			not.setNotificationStatus(rs.getString("status"));
-			
-		//	System.out.println("adding notification date "+ not.returnNotificationDate()+ " time "+not.returnNotificationTime()+" from table id"+idTimetable);
+
 			timetable.returnArrayListOfNotificaations().add(not);
 		}
 		}catch(SQLException e){
@@ -586,7 +676,11 @@ public class database {
 		}
 	}
 	
-	
+	/**
+	 * method which record data from database to object medicine calling from recordTimetables and fill data for every timetable medicine object 
+	 * @param int1
+	 * @return
+	 */
 	private medicine recordMedicine(int int1){
 		medicine med = null; 
 	try{
@@ -599,8 +693,7 @@ public class database {
 					med.setStrength(rs.getString("Strength"));
 					med.setDayLimit(rs.getString("Limit_Day"));
 					med.setDaysLimit(rs.getString("Limit_Days"));
-					
-			//		System.out.println("nahravam liek "+med.returnNameOfMedicine());
+
 				}
 	}catch(SQLException e){
 		System.out.println("medicine chyba "+e);

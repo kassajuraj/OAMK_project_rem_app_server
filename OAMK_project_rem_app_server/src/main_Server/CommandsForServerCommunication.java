@@ -47,20 +47,44 @@ public class CommandsForServerCommunication {
 		case '-' : s = this.getpersonalDataFromDB(s); break;
 		case '*' : s = this.workWithTimetable(s); break;
 		case '%' : s = this.LookForNameOfMedicineInDatabase(showStringNumber(s, 1)); break;
-		default : //TODO invalid action
-			//TODO make message for edit my own profile where I can change my mail, password, name, surname, tel. number and my contact person not neccesary it is only updating the info
+		case '^' : s = this.updateUserProfile(s); break; 
+		default : s =  "invalid action"; break;
+			//TODO make message for edit my own profile where I can change my mail, password
 		}
 		
 		return s;
 	}
+	/**
+	 * 
+	 * @param s
+	 * @return
+	 */
+	private String updateUserProfile(String s) {
+	
+		if(db.makeConnection('^', s)){
+			return db.returnMessageToReturn();
+		}
+		
+		return "User's profile cannot be update";
+	}
+	/**
+	 * 
+	 * @param receivedMessage
+	 * @return
+	 */
 	private String notificationMethod(String receivedMessage) {
-		// TODO Auto-generated method stub
+
 		if(db.makeConnection('!', receivedMessage))
 			return db.returnMessageToReturn();
 		else
 			return "Error in commands";
 			
 	}
+	/**
+	 * 
+	 * @param receivedMessage
+	 * @return
+	 */
 	private String workWithTimetable(String receivedMessage) {
 		String s; 
 		
@@ -68,10 +92,7 @@ public class CommandsForServerCommunication {
 			s = db.returnMessageToReturn();
 		else
 			s = "Error work with timetables";
-		
-		
-		// TODO if (*editTimetable;) find timetable, and update it 
-		// TODO if (*removeTimetable;) find timetable and remove it 
+ 
 		return s;
 	}
 	/**
@@ -172,18 +193,13 @@ public class CommandsForServerCommunication {
 		if(user == null)
 			if(db.makeConnection('-', s))
 				user = db.returnPersonFromDB();
-		//}else{
 			Person contactPerson = user.returnContactPerson();
 			
 			if(s.contains("-infoUser;"))
 				s = "-infoUser;"+user.returnID()+";"+user.returnName()+";"+user.returnSurname()+";"+user.returnSex()+";"+user.returnTelNumber()+";";
 			else if(s.contains("-infoContactPerson;"))
 				s = "-infoContactPerson;"+contactPerson.returnID()+";"+contactPerson.returnName()+";"+contactPerson.returnSurname()+";"+contactPerson.returnSex()+";"+contactPerson.returnTelNumber()+";";
-			//else if(s.contains("-infoTimetables"))
-				//TODO
-			//else if(s.contains("-infoMedicine"))
-			//	s = "-infoMedicine"+
-	//	}
+
 		return s;
 	}
 }
