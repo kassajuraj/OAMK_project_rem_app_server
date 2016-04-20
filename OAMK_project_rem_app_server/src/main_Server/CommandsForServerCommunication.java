@@ -48,10 +48,24 @@ public class CommandsForServerCommunication {
 		case '*' : s = this.workWithTimetable(s); break;
 		case '%' : s = this.LookForNameOfMedicineInDatabase(showStringNumber(s, 1)); break;
 		case '^' : s = this.updateUserProfile(s); break; 
+		case '&' : s = this.addNewmedicine(s);break;
 		default : s =  "invalid action"; break;
 			//TODO make message for edit my own profile where I can change my mail, password
 		}
 		
+		return s;
+	}
+	/**
+	 * method for adding new medicine to database
+	 * @param s
+	 * @return
+	 */
+	private String addNewmedicine(String s) {
+		if(db.makeConnection('&', s))
+			s = "medicine added";
+		else 
+			s = "cannot add new medicine";
+
 		return s;
 	}
 	/**

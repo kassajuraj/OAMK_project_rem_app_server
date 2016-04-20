@@ -110,9 +110,31 @@ public class database {
 		case '-' : AllRight = this.recordAllUsersData(s); break;
 		case '*' : AllRight = this.workWithTimetablesInDatabase(s); break;
 		case '^' : AllRight = this.updatePersonalData(s); break;
+		case '&' : AllRight = this.addMedicineToDB(s); break;
 		default :  {AllRight = false; System.out.println("invalid message come to database!");} break; 
 		}
 		return AllRight;
+	}
+	/**
+	 * add new medicine from client message to database 
+	 * @param s
+	 * @return
+	 */
+	private boolean addMedicineToDB(String s) {
+		/*message form "&addMedicine;name;strength;dayLimit;daysLimit;"*/
+		medicine pill = new medicine();
+		pill.setNameOfMedicine(this.showStringNumber(s, 1));
+		pill.setStrength(this.showStringNumber(s, 2));
+		pill.setDayLimit(this.showStringNumber(s, 3));
+		pill.setDaysLimit(this.showStringNumber(s, 4));
+		try{
+		String sql = "INSERT INTO `remmem_app`.`medicinelist` (`DrugName`, `Strength`, `Limit_Day`, `Limit_Days`) VALUES ('"+pill.returnNameOfMedicine()+"', '"+pill.returnStrengthOfMedicine()+"', '"+pill.returnDayLimit()+"', '"+pill.returnDaysLimit()+"')";
+			stmt.executeUpdate(sql);
+		}catch(SQLException e){
+			System.out.println("Cannot add new medicine to database "+e);
+			return false;
+		}
+		return true;
 	}
 	/**
 	 * method to know if was user's profile updated in database 
