@@ -769,48 +769,50 @@ public class database {
 	
 	Statement stmtNotifications;
 	Connection connect;
-	
-	public ArrayList<Integer> controlNotifications(String TodayDate, String nowTime) {
-		// TODO Auto-generated method stub
-		ArrayList<Integer> listOfIDs = new ArrayList<Integer>();
-		
+	/**
+	 * main method for control notifications and make the updates using the time 
+	 * @param TodayDate
+	 * @param nowTime
+	 * @return
+	 */
+	public ArrayList<Person> controlNotifications(String TodayDate, String nowTime) {
+
+		ArrayList<Person> personsList = new ArrayList<Person>();
 		try (Connection connection = DriverManager.getConnection(url, username, password)) {
 		       connect = connection;
-			   System.out.println("Database connected!");
-			   System.out.println("Creating statement...");
 			   stmtNotifications = connect.createStatement();
-			   System.out.println("Statement has been created...");
-
 			   OurDateClass odc = new OurDateClass();
 			   int c = -1;
-			   
-			   ArrayList<notification> todaysNotifications = this.selectTodaysNotifications(TodayDate);
-			   
+			   ArrayList<notification> todaysNotifications = this.selectTodaysNotifications(TodayDate);   
 			   for(notification n : todaysNotifications){
-				   
-				   c = odc.compareTimes(n.returnNotificationTimePlusMin(10), nowTime);
+				   c = odc.compareTimes(n.returnNotificationTimePlusMin(30), nowTime);
 				   if(c == 2 || c == 0){
-					   listOfIDs = this.criticalList();
+					   System.out.println("today notification + 30 minut ");
+					   this.updateNotifications(TodayDate, n.returnNotificationTime(), "out date");
 				   }
 				   else{
-					   c = odc.compareTimes(n.returnNotificationTimePlusMin(5), nowTime);
-					   if(c == 2 || c == 0)
-						   this.updateNotifications(TodayDate, n.returnNotificationTime(), "critical");
+					   c = odc.compareTimes(n.returnNotificationTimePlusMin(10), nowTime);
+					   if(c == 2 || c == 0){
+						   System.out.println("today notification + 10 minut ");
+						   if(n.returnNotificationStatus().equals("critical")){
+							   System.out.println("critical notification");
+									   personsList.add(this.criticalContactPersonList(n.returnIdTimetable()));
+						   }
+					   }
 					   else{
-						   c = odc.compareTimes(n.returnNotificationTime(), nowTime);
-						   if(c == 2 || c == 0)
-							   this.updateNotifications(TodayDate, n.returnNotificationTime(), "active");
-					   	}
-					  }
+						   c = odc.compareTimes(n.returnNotificationTimePlusMin(5), nowTime);
+						   if(c == 2 || c == 0){
+							   System.out.println("today notification + 5 minut ");
+							   this.updateNotifications(TodayDate, n.returnNotificationTime(), "critical");
+						   }
+						   else{
+							   c = odc.compareTimes(n.returnNotificationTime(), nowTime);
+							   	if(c == 2 || c == 0)
+							   		this.updateNotifications(TodayDate, n.returnNotificationTime(), "active");
+					   		}
+					   }
+				   }
 			   }
-			   //TODO look for notifications with with date = today, status = new, time <= now   - make update 
-			  // 
-			   //TODO look for notifications with date = today, status = active, time+5 <= now   - make update
-			   
-			   //TODO look for notifications with date = today, status = critical, time+10 <= now - return ArrayList of IDs of users to send message (contact persons) 
-			   
-			   
-			   
 			   stmtNotifications.close();
 			   connect.close();
 			   
@@ -819,32 +821,32 @@ public class database {
 		   }
 		   try {
 		       Class.forName("com.mysql.jdbc.Driver");
-		       System.out.println("Driver loaded!");
 		   } catch (ClassNotFoundException e) {
 		       throw new IllegalStateException("Cannot find the driver in the classpath!", e);
 		   }
-		   System.out.println("Goodbye!");
-		   
-		return null;
+		return personsList;
 	}
 	/**
 	 * 
 	 * @return
 	 */
-	private ArrayList<Integer> criticalList() {
-		ArrayList<Integer> ALI = new ArrayList<Integer>();
+	private Person criticalContactPersonList(int id) {
+		Person p = new Person();
 		
 		try{
-			String sql = "SELECT * FROM remmem_app.notification_timetable where status = 'critical'";
+			String sql = "select * from remmem_app.contactpersonlist where id_ContactPerson =(select id_ContactPerson from remmem_app.userslist where id =(select id_user from remmem_app.all_timetables where id_timetable = '"+id+"'))";
 			ResultSet rs = stmtNotifications.executeQuery(sql);
 			while (rs.next()){
-				//TODO add users id to arraylist 
-			//	ALI.add();
+				p.setID(rs.getInt("id_ContactPerson"));
+				p.setName(rs.getString("name"));
+				p.setSurname(rs.getString("surname"));
+				p.setSex(rs.getString("sex"));
+				p.setTelNumber(rs.getString("tel_number"));
 			}
 			}catch(SQLException e){
 				System.out.println("notification chyba "+e);
 			}
-		return ALI;
+		return p;
 	}
 	/**
 	 * 
@@ -853,8 +855,8 @@ public class database {
 	 * @param string
 	 */
 	private void updateNotifications(String todayDate, String returnNotificationTime, String string) {
-		System.out.println("updating database");
-		String SQL = "update `remmem_app`.`notification_timetable` set `status` = '"+string+"'";
+		//System.out.println("updating database");
+		String SQL = "update `remmem_app`.`notification_timetable` set `status` = '"+string+"' where date = '"+todayDate+"' and time = '"+returnNotificationTime+"'";
 		try{
 		stmtNotifications.executeUpdate(SQL);
 		}catch(SQLException e){
@@ -868,7 +870,7 @@ public class database {
 	 */
 	private ArrayList<notification> selectTodaysNotifications(String returnDate) {
 		ArrayList<notification> ALN = new ArrayList<notification>();
-		System.out.println("selecting the notifications...");
+		//System.out.println("selecting the notifications...");
 		try{
 			String sql = "SELECT * FROM remmem_app.notification_timetable where date = '"+returnDate+"'";
 			ResultSet rs = stmtNotifications.executeQuery(sql);
@@ -877,6 +879,7 @@ public class database {
 				not.setNotificationDate(rs.getString("date"));
 				not.setNotificationTime(rs.getString("time"));
 				not.setNotificationStatus(rs.getString("status"));
+				not.setID_table(rs.getInt("id_timetable"));
 				ALN.add(not);
 			}
 			}catch(SQLException e){

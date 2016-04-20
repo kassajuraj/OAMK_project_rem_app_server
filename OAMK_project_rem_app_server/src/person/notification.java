@@ -10,6 +10,7 @@ import main_Server.OurDateClass;
 public class notification {
 	
 	 private String date, time, status;
+	 int ID_timetable;
 	
 	
 	 public notification(){
@@ -22,6 +23,15 @@ public class notification {
 		 this.status = status;
 	}
 	
+	 public void setID_table(int id){
+		 this.ID_timetable = id;
+	 }
+	 
+	 public int returnIdTimetable(){
+		 return this.ID_timetable;
+	 }
+	 
+	 
 	public void setNotificationDate(String d){
 		this.date = d;
 	}
@@ -50,7 +60,12 @@ public class notification {
 	public String returnNotificationTimePlusMin(int min){
 		OurDateClass d = new OurDateClass();
 		d.setTimeFromTimeformat(time);
-		d.setMinutes(min + d.returnMinutes());
+		int m = min + d.returnMinutes();
+		while(m >= 60){
+			m = m-60;
+			d.plusHoursToDate(1);
+		}
+		d.setMinutes(m);
 		
 		return d.returnTime();
 	}

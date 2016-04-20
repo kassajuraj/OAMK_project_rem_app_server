@@ -7,6 +7,7 @@ import java.util.Date;
 
 import javax.swing.*;
 import ConsolePackage.TextAreaOutputStream;
+import person.Person;
 
 /**
 *
@@ -18,7 +19,7 @@ public class server {
 	private ServerSocket providerSocket;
 	private String message;
 	private database db = new database();
-	ArrayList<Integer> IdsOfUserToBeNotify = new ArrayList<Integer>();
+	ArrayList<Person> IdsOfUserToBeNotify = new ArrayList<Person>();
 	/**
 	 * Constructor 
 	 */
@@ -77,10 +78,22 @@ public class server {
 	void MonitoringNotifications(){
 		//TODO  New thread with endless loop which will control actual time and compare with arrayList of notifications id database
 		Thread monitorNotificationThread = new Thread(){
+			
 			public void run(){
+				while(true){
+					System.out.println("Updating the notification database...");
 				OurDateClass now = new OurDateClass(new Date());
 				IdsOfUserToBeNotify = db.controlNotifications(now.returnDate(), now.returnTime());
 				
+				for(Person p : IdsOfUserToBeNotify)
+					System.out.println("person "+p.returnName()+", "+p.returnSurname()+", "+p.returnSex()+", "+p.returnTelNumber());
+				try {
+					this.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				}
 			}
 		};
 		monitorNotificationThread.start();
