@@ -198,7 +198,7 @@ public class database {
 	}
 	private boolean updateNotificationStatus(String s) {
 		/*message form "!updateStatusOfNotification;IDtable;dateNotification;TimeNotification;status;"*/
-		
+		//TODO method does not updating the notification 
 		System.out.println("I am here 1");
 		notification n = new notification();
 		n.setID_table(Integer.parseInt(this.showStringNumber(s, 1)));
@@ -207,7 +207,7 @@ public class database {
 		n.setNotificationStatus(this.showStringNumber(s, 4));
 		
 		
-		String SQL = "update `remmem_app`.`notification_timetable` set `status` = '"+n.returnNotificationStatus()+"' where date = '"+n.returnNotificationDate()+"' and time = '"+n.returnIdTimetable()+"' and id_timetable ='"+n.returnIdTimetable()+"'";
+		String SQL = "update `remmem_app`.`notification_timetable` set `status` = '"+n.returnNotificationStatus()+"' where date = '"+n.returnNotificationDate()+"' and time = '"+n.returnIdTimetable()+"'";
 		try{
 		stmt.executeUpdate(SQL);
 		}catch(SQLException e){
