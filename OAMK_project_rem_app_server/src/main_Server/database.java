@@ -188,8 +188,35 @@ public class database {
 		if(s.contains("!addNotification;"))
 			if(this.insertNotificationsToDatabase(s))
 				return true;
+		if(s.contains("!updateStatusOfNotification;"))
+			if(this.updateNotificationStatus(s)){
+				System.out.println("I am here 3");
+				return true;
+			}
 
 		return false;
+	}
+	private boolean updateNotificationStatus(String s) {
+		/*message form "!updateStatusOfNotification;IDtable;dateNotification;TimeNotification;status;"*/
+		
+		System.out.println("I am here 1");
+		notification n = new notification();
+		n.setID_table(Integer.parseInt(this.showStringNumber(s, 1)));
+		n.setNotificationDate(this.showStringNumber(s, 2));
+		n.setNotificationTime(this.showStringNumber(s, 3));
+		n.setNotificationStatus(this.showStringNumber(s, 4));
+		
+		
+		String SQL = "update `remmem_app`.`notification_timetable` set `status` = '"+n.returnNotificationStatus()+"' where date = '"+n.returnNotificationDate()+"' and time = '"+n.returnIdTimetable()+"' and id_timetable ='"+n.returnIdTimetable()+"'";
+		try{
+		stmt.executeUpdate(SQL);
+		}catch(SQLException e){
+			System.out.println("error sql "+e);
+			return false;
+		}
+		System.out.println("I am here 2");
+		messageToReturn = "!notificationStatusUpdated;";
+		return true;
 	}
 	/**
 	 * Method inserting the notifications to database table and connecting the notifications with the right timetable
@@ -785,33 +812,35 @@ public class database {
 			   int c = -1;
 			   ArrayList<notification> todaysNotifications = this.selectTodaysNotifications(TodayDate);   
 			   for(notification n : todaysNotifications){
-				   c = odc.compareTimes(n.returnNotificationTimePlusMin(30), nowTime);
-				   if(c == 2 || c == 0){
-					   System.out.println("today notification + 30 minut ");
-					   this.updateNotifications(TodayDate, n.returnNotificationTime(), "out date");
-				   }
-				   else{
-					   c = odc.compareTimes(n.returnNotificationTimePlusMin(10), nowTime);
-					   if(c == 2 || c == 0){
-						   System.out.println("today notification + 10 minut ");
-						   if(n.returnNotificationStatus().equals("critical")){
-							   System.out.println("critical notification");
+				   if(!n.returnNotificationStatus().equals("waiting")){
+					   c = odc.compareTimes(n.returnNotificationTimePlusMin(30), nowTime);
+				   		if(c == 2 || c == 0){
+				   			//   System.out.println("today notification + 30 minut ");
+				   			this.updateNotifications(TodayDate, n.returnNotificationTime(), "out date");
+				   		}
+				   		else{
+				   			c = odc.compareTimes(n.returnNotificationTimePlusMin(10), nowTime);
+				   			if(c == 2 || c == 0){
+				   				//   System.out.println("today notification + 10 minut ");
+				   				if(n.returnNotificationStatus().equals("critical")){
+				   					//   System.out.println("critical notification");
 									   personsList.add(this.criticalContactPersonList(n.returnIdTimetable()));
-						   }
-					   }
-					   else{
-						   c = odc.compareTimes(n.returnNotificationTimePlusMin(5), nowTime);
-						   if(c == 2 || c == 0){
-							   System.out.println("today notification + 5 minut ");
-							   this.updateNotifications(TodayDate, n.returnNotificationTime(), "critical");
-						   }
-						   else{
-							   c = odc.compareTimes(n.returnNotificationTime(), nowTime);
-							   	if(c == 2 || c == 0)
-							   		this.updateNotifications(TodayDate, n.returnNotificationTime(), "active");
+				   				}
+				   			}
+				   			else{
+				   				c = odc.compareTimes(n.returnNotificationTimePlusMin(5), nowTime);
+				   				if(c == 2 || c == 0){
+				   					//   System.out.println("today notification + 5 minut ");
+				   					this.updateNotifications(TodayDate, n.returnNotificationTime(), "critical");
+				   				}
+				   				else{
+				   					c = odc.compareTimes(n.returnNotificationTime(), nowTime);
+				   					if(c == 2 || c == 0)
+				   						this.updateNotifications(TodayDate, n.returnNotificationTime(), "active");
 					   		}
 					   }
 				   }
+				 }
 			   }
 			   stmtNotifications.close();
 			   connect.close();

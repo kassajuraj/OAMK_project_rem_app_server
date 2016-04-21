@@ -41,7 +41,7 @@ public class CommandsForServerCommunication {
 		switch(s.charAt(0)){
 		
 		case '~' : s = this.commandsForSignIn(s); break;
-		case '!' : 		this.notificationMethod(s); break;
+		case '!' : s = this.notificationMethod(s); break;
 		case '$' : s = this.commandsForRegistration(s); break;
 		case '#' : s = this.commandForEditProfile(s); break; 
 		case '-' : s = this.getpersonalDataFromDB(s); break;

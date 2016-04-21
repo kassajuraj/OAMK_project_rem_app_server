@@ -157,7 +157,9 @@ public class OurDateClass {
 		hour = Integer.parseInt(HOURS);
 		
 		String MIN = this.showStringNumberFromDatetime(timeFormat, 1, ':');
+		
 		if(MIN.charAt(0)=='0')
+			if(MIN.charAt(1) < MIN.length())
 			min = MIN.charAt(1); 
 		else
 			min = Integer.parseInt(MIN);
