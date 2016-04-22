@@ -61,7 +61,7 @@ public class OurDateClass {
 	 */
 	public int compareDates(String firstDateFormat, String secondDateFormat){
 		OurDateClass firstDate = new OurDateClass();
-		firstDate.setDateFromDateFormat(secondDateFormat);
+		firstDate.setDateFromDateFormat(firstDateFormat);
 		
 		OurDateClass secondDate = new OurDateClass();
 		secondDate.setDateFromDateFormat(secondDateFormat);
@@ -158,10 +158,10 @@ public class OurDateClass {
 		
 		String MIN = this.showStringNumberFromDatetime(timeFormat, 1, ':');
 		
-		if(MIN.charAt(0)=='0')
-			if(MIN.charAt(1) < MIN.length())
+		if(MIN.charAt(0)=='0'){
+			if(1 < MIN.length())
 			min = MIN.charAt(1); 
-		else
+		}else
 			min = Integer.parseInt(MIN);
 	}
 	

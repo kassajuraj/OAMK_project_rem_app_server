@@ -1,6 +1,7 @@
 package main_Server;
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 
 import person.Person;
 import person.medicineTimetables;
@@ -20,18 +21,20 @@ public class clientThread extends Thread{
     private String clientName;
     private final clientThread[] threads;
     private int maxClientsCount;
-
+    private ArrayList<Person> toCallPersons;
+    private boolean usersDataLoaded = false;
  /**
   * Constructor 
   * @param clientSocket = client's socket
   * @param threads = the thread where is the communication between client and server 
   */
-  public clientThread(Socket clientSocket, clientThread[] threads, int i) {
+  public clientThread(Socket clientSocket, clientThread[] threads, int i, ArrayList<Person> toCallPersons) {
 		    this.connection = clientSocket;
 		    this.threads = threads;
 		    maxClientsCount = threads.length;
 		    this.clientName = "client_"+i;
 		    this.commands = new CommandsForServerCommunication();
+		    this.toCallPersons = toCallPersons;
 		  }
 
 /**
@@ -63,12 +66,40 @@ public class clientThread extends Thread{
 		                	  message = (String)in.readObject();
 		                	  System.out.println("massage from client_"+i+" >"+message);
 						
-		                	  if(message.contains("-infoTimetables;"))
-		                		  this.sendTimetables();
+		                	  if(message.contains("-infoTimetables;") || message.contains("+check update;")){
+		                		 if(message.contains("-infoTimetables;"))
+		                			 this.sendTimetables("load");
+		                		 else
+		                			 this.sendTimetables("update");
+		                	  }  
 		                	  else if(message.equals("Log Out"))
 		                		  sendMessage("Log Out");
 		                	  else
 		                		  sendMessage(commands.mainCommandsForCommunication(message));
+		                	  
+		                	  if(usersDataLoaded){
+		                		  Person person = threads[i].returnCommandsForCommunication().returnUser();
+		    		        	  for(Person p : toCallPersons){
+		    		        		 // System.out.println(p.returnName());
+		    		        		  if(p.returnCallMe().equals("toCall")){
+		    		        			  if(person.returnName().equals(p.returnName()) && person.returnSurname().equals(p.returnSurname()) && person.returnTelNumber().equals(p.returnTelNumber())){
+		    		        				  /*send message to user to control his/her contact person*/
+		    		        				  System.out.println("Sending message to contact person "+p.returnName());
+		    		        				  threads[i].sendMessage("controlCP");
+		    		        				  /*set call status to waiting until will receive answer from contact person*/
+		    		        				  p.setCallMe("waiting");
+		    		        				  
+		    		        				  if(threads[i].receiveMessage().equals("controled"))
+		    		        					  p.setCallMe("Ok");
+		    		        			  }
+		    		        		  }
+		    		        		  else if(p.returnCallMe().equals("Ok"))
+		    		        			  toCallPersons.remove(p);
+		    		        			  
+		    		        	  }
+		    		          }
+		                	  
+		                		  	  
 		               }
 					 }
 					}
@@ -110,10 +141,27 @@ public class clientThread extends Thread{
 		}
 		}
 	}
+ 
+ 	public String receiveMessage(){
+ 		try {
+ 			String msg = (String)in.readObject();
+ 			System.out.println("Server received < "+msg);
+			return msg;
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+ 		return null;
+ 	}
+ 
+ 
    /**
 	 *  method for sending the message 
 	 */
-	private void sendMessage(String msg){
+	public void sendMessage(String msg){
 		try{
 			out.writeObject(msg);
 			out.flush();
@@ -125,7 +173,7 @@ public class clientThread extends Thread{
 	/**
 	 * method for sending information about timetables when the user sign in
 	 */
-	private void sendTimetables(){
+	private void sendTimetables(String s){
 		 for (medicineTimetables mtt : commands.returnUser().returnArrayListOfTimetables()){
 			  /*message form "-infoTimetables;IDOftimetable;dateFrom;timeFrom;dateUntil;timeUntil;active;"*/
 			  message = "-infoTimetables;"+mtt.returnIdOfTimetable()+";"+mtt.returnDate("from")+";"+mtt.returnTime("from")+";"+mtt.returnDate("to")+";"+mtt.returnTime("to")+";"+mtt.returnActive()+";";
@@ -139,7 +187,11 @@ public class clientThread extends Thread{
 				  sendMessage(notificationMessage);
 			  }
 		  }
+		 if(s.equals("update"))
+			 sendMessage("+timetablesuptodate;");
+		 else
 		  sendMessage("-infoUserDone;"+commands.returnUser().returnID()+";");
+		 usersDataLoaded = true;
 	}
 	
 	public CommandsForServerCommunication returnCommandsForCommunication(){

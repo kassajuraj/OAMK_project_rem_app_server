@@ -1,6 +1,7 @@
 package main_Server;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Date;
 
 import person.Person;
 import person.medicine;
@@ -189,32 +190,28 @@ public class database {
 			if(this.insertNotificationsToDatabase(s))
 				return true;
 		if(s.contains("!updateStatusOfNotification;"))
-			if(this.updateNotificationStatus(s)){
-				System.out.println("I am here 3");
+			if(this.updateNotificationStatus(s))
 				return true;
-			}
 
 		return false;
 	}
 	private boolean updateNotificationStatus(String s) {
 		/*message form "!updateStatusOfNotification;IDtable;dateNotification;TimeNotification;status;"*/
-		//TODO method does not updating the notification 
-		System.out.println("I am here 1");
 		notification n = new notification();
 		n.setID_table(Integer.parseInt(this.showStringNumber(s, 1)));
 		n.setNotificationDate(this.showStringNumber(s, 2));
 		n.setNotificationTime(this.showStringNumber(s, 3));
 		n.setNotificationStatus(this.showStringNumber(s, 4));
+		System.out.println("Client updated notification status to "+n.returnNotificationStatus());
 		
+		String SQL = "update `remmem_app`.`notification_timetable` set `status` = '"+n.returnNotificationStatus()+"' where date = '"+n.returnNotificationDate()+"' and time = '"+n.returnNotificationTime()+"' and id_timetable = '"+n.returnIdTimetable()+"'";
 		
-		String SQL = "update `remmem_app`.`notification_timetable` set `status` = '"+n.returnNotificationStatus()+"' where date = '"+n.returnNotificationDate()+"' and time = '"+n.returnIdTimetable()+"'";
 		try{
 		stmt.executeUpdate(SQL);
 		}catch(SQLException e){
 			System.out.println("error sql "+e);
 			return false;
 		}
-		System.out.println("I am here 2");
 		messageToReturn = "!notificationStatusUpdated;";
 		return true;
 	}
@@ -810,33 +807,46 @@ public class database {
 			   stmtNotifications = connect.createStatement();
 			   OurDateClass odc = new OurDateClass();
 			   int c = -1;
+			   /*Make arrayList of notifications with today date*/
 			   ArrayList<notification> todaysNotifications = this.selectTodaysNotifications(TodayDate);   
 			   for(notification n : todaysNotifications){
-				   if(!n.returnNotificationStatus().equals("waiting")){
+				   /*If was answer to take medicine "No" then change status to "critical" */
+				   if(n.returnNotificationStatus().equals("No"))
+					   n.setNotificationStatus("critical");
+				   /*In arraylist of todays notifications look for notifications status and control time if is status "new" or "waiting" or "active" or "critical" */
+				   if(!n.returnNotificationStatus().equals("outdated") && !n.returnNotificationStatus().equals("Ok") /*|| n.returnNotificationStatus().equals("active") || n.returnNotificationStatus().equals("critical")*/){
+					   /*if is NOW TIME >= (notification time + 30 minutes)*/
 					   c = odc.compareTimes(n.returnNotificationTimePlusMin(30), nowTime);
 				   		if(c == 2 || c == 0){
-				   			//   System.out.println("today notification + 30 minut ");
-				   			this.updateNotifications(TodayDate, n.returnNotificationTime(), "out date");
+				   			//System.out.println("updating outdated status c = "+c+" not. time +30 = "+n.returnNotificationTimePlusMin(30));
+				   			/*update notification status to "outdated" */
+				   			this.updateNotifications(TodayDate, n.returnNotificationTime(), "outdated");
 				   		}
 				   		else{
+				   			/*if is NOW TIME >= (notification time + 10 minutes)*/
 				   			c = odc.compareTimes(n.returnNotificationTimePlusMin(10), nowTime);
 				   			if(c == 2 || c == 0){
-				   				//   System.out.println("today notification + 10 minut ");
+				   				//System.out.println("critical status c = "+c+" not. time +10 = "+n.returnNotificationTimePlusMin(10));
 				   				if(n.returnNotificationStatus().equals("critical")){
-				   					//   System.out.println("critical notification");
 									   personsList.add(this.criticalContactPersonList(n.returnIdTimetable()));
+									   n.setNotificationStatus("call CP");
 				   				}
 				   			}
 				   			else{
+				   				/*if is NOW TIME >= (notification time + 5 minutes)*/
 				   				c = odc.compareTimes(n.returnNotificationTimePlusMin(5), nowTime);
 				   				if(c == 2 || c == 0){
-				   					//   System.out.println("today notification + 5 minut ");
+				   					//System.out.println("updating critical status c = "+c+" not. time +5 = "+n.returnNotificationTimePlusMin(5));
 				   					this.updateNotifications(TodayDate, n.returnNotificationTime(), "critical");
 				   				}
 				   				else{
+				   					/*if is NOW TIME >= (notification time < 5) then update status "active" (it means that notification is also controlled by server)*/
 				   					c = odc.compareTimes(n.returnNotificationTime(), nowTime);
-				   					if(c == 2 || c == 0)
+				   					if(c == 2 || c == 0){
+				   						if(n.returnNotificationStatus().equals("waiting"))
+				   						//System.out.println("updating active status c = "+c+" not. time = "+n.returnNotificationTime());
 				   						this.updateNotifications(TodayDate, n.returnNotificationTime(), "active");
+				   					}
 					   		}
 					   }
 				   }
@@ -884,7 +894,9 @@ public class database {
 	 * @param string
 	 */
 	private void updateNotifications(String todayDate, String returnNotificationTime, String string) {
-		//System.out.println("updating database");
+		OurDateClass d = new OurDateClass(new Date());
+		System.out.print("--> "+d.returnAllDate());
+		System.out.println("....Server updating notification date "+todayDate +" and time "+returnNotificationTime+" to status ="+string);
 		String SQL = "update `remmem_app`.`notification_timetable` set `status` = '"+string+"' where date = '"+todayDate+"' and time = '"+returnNotificationTime+"'";
 		try{
 		stmtNotifications.executeUpdate(SQL);

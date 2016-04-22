@@ -15,6 +15,7 @@ public class Person {
 	private String sex;
 	private String telNumber;
 	private Person contactPerson;
+	private String callMe;
 	private ArrayList<medicineTimetables> timetable = new ArrayList<medicineTimetables>();
 	/**
 	 * constructor
@@ -160,4 +161,14 @@ public class Person {
 	public ArrayList<medicineTimetables> returnArrayListOfTimetables(){
 		return this.timetable;
 	}
+	
+	public String returnCallMe(){
+		return this.callMe;
+	}
+	
+	public void setCallMe(String s){
+		this.callMe = s;
+	}
+	
+	
 }

@@ -19,7 +19,7 @@ public class server {
 	private ServerSocket providerSocket;
 	private String message;
 	private database db = new database();
-	ArrayList<Person> IdsOfUserToBeNotify = new ArrayList<Person>();
+	ArrayList<Person> toCallPersons = new ArrayList<Person>();
 	/**
 	 * Constructor 
 	 */
@@ -83,12 +83,20 @@ public class server {
 				while(true){
 					System.out.println("Updating the notification database...");
 				OurDateClass now = new OurDateClass(new Date());
-				IdsOfUserToBeNotify = db.controlNotifications(now.returnDate(), now.returnTime());
+				ArrayList<Person> UserToBeNotify = new ArrayList<Person>();
+				UserToBeNotify = db.controlNotifications(now.returnDate(), now.returnTime());
 				
-				for(Person p : IdsOfUserToBeNotify)
-					System.out.println("person "+p.returnName()+", "+p.returnSurname()+", "+p.returnSex()+", "+p.returnTelNumber());
+				for(Person p : UserToBeNotify){
+					System.out.println("Person set to call status");
+					p.setCallMe("toCall");
+					if(!toCallPersons.equals(p)){
+						System.out.println("person to call"+p.returnName());
+						toCallPersons.add(p);
+					}
+						
+				}					
 				try {
-					this.sleep(5000);
+					this.sleep(60*1000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -126,10 +134,9 @@ public class server {
 		        int i = 0;
 		        for (i = 0; i < maxClientsCount; i++) {
 		          if (threads[i] == null) {
-		            (threads[i] = new clientThread(clientSocket, threads, i)).start();
+		            (threads[i] = new clientThread(clientSocket, threads, i, toCallPersons)).start();
 		            break;
 		          }
-		          //threads[i].returnCommandsForCommunication().returnUser().returnID();
 		        }
 		        if (i == maxClientsCount) {
 		          PrintStream os = new PrintStream(clientSocket.getOutputStream());
