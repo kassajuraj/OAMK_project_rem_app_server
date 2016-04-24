@@ -2,6 +2,7 @@ package main_Server;
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
+import java.util.Date;
 
 import person.Person;
 import person.medicineTimetables;
@@ -23,18 +24,18 @@ public class clientThread extends Thread{
     private int maxClientsCount;
     private ArrayList<Person> toCallPersons;
     private boolean usersDataLoaded = false;
+    private boolean test = false;
  /**
   * Constructor 
   * @param clientSocket = client's socket
   * @param threads = the thread where is the communication between client and server 
   */
-  public clientThread(Socket clientSocket, clientThread[] threads, int i, ArrayList<Person> toCallPersons) {
+  public clientThread(Socket clientSocket, clientThread[] threads, int i) {
 		    this.connection = clientSocket;
 		    this.threads = threads;
 		    maxClientsCount = threads.length;
 		    this.clientName = "client_"+i;
 		    this.commands = new CommandsForServerCommunication();
-		    this.toCallPersons = toCallPersons;
 		  }
 
 /**
@@ -72,32 +73,21 @@ public class clientThread extends Thread{
 		                		 else
 		                			 this.sendTimetables("update");
 		                	  }  
-		                	  else if(message.equals("Log Out"))
+		                	  else if(message.equals("Log Out")){
 		                		  sendMessage("Log Out");
+		                		  test = false;
+		                	  }
 		                	  else
 		                		  sendMessage(commands.mainCommandsForCommunication(message));
 		                	  
-		                	  if(usersDataLoaded){
-		                		  Person person = threads[i].returnCommandsForCommunication().returnUser();
-		    		        	  for(Person p : toCallPersons){
-		    		        		 // System.out.println(p.returnName());
-		    		        		  if(p.returnCallMe().equals("toCall")){
-		    		        			  if(person.returnName().equals(p.returnName()) && person.returnSurname().equals(p.returnSurname()) && person.returnTelNumber().equals(p.returnTelNumber())){
-		    		        				  /*send message to user to control his/her contact person*/
-		    		        				  System.out.println("Sending message to contact person "+p.returnName());
-		    		        				  threads[i].sendMessage("controlCP");
-		    		        				  /*set call status to waiting until will receive answer from contact person*/
-		    		        				  p.setCallMe("waiting");
-		    		        				  
-		    		        				  if(threads[i].receiveMessage().equals("controled"))
-		    		        					  p.setCallMe("Ok");
-		    		        			  }
-		    		        		  }
-		    		        		  else if(p.returnCallMe().equals("Ok"))
-		    		        			  toCallPersons.remove(p);
-		    		        			  
-		    		        	  }
-		    		          }
+		                	  //TODO make new message for update notifications 
+		                	  //TODO make only local list of persons and read data from here and save data to this list too 
+		                	// if(!message.equals("Log Out"))
+		                	  if(usersDataLoaded)
+		                		  test=true;
+		                	  
+		                	  if(test)
+		                		  controlNotifications();
 		                	  
 		                		  	  
 		               }
@@ -197,5 +187,49 @@ public class clientThread extends Thread{
 	public CommandsForServerCommunication returnCommandsForCommunication(){
 		return this.commands;
 	}
+	
+	private void controlNotifications(){
+		//TODO  New thread with endless loop which will control actual time and compare with arrayList of notifications id database
+		Thread monitorNotificationThread = new Thread(){
+			
+			public void run(){
+				while(true){
+						for (int i = 0; i < maxClientsCount; i++) {
+			                  if (threads[i] != null && threads[i].clientName != null && threads[i].clientName.equals("client_"+i)){
+			                	  Person person = threads[i].returnCommandsForCommunication().returnUser();
+			                	  toCallPersons = threads[i].returnCommandsForCommunication().returnDatabase().toCallContactPersonList();
+				  		        	  for(Person p : toCallPersons){
+				  		        		  System.out.println(p.returnName());
+				  		        		  if(p.returnCallMe().equals("toCall")){
+				  		        			  if(person.returnName().equals(p.returnName()) && person.returnSurname().equals(p.returnSurname()) && person.returnTelNumber().equals(p.returnTelNumber())){
+				  		        				  /*send message to user to control his/her contact person*/
+				  		        				  System.out.println("Sending message to contact person "+p.returnName());
+				  		        				  sendMessage("controlCP");
+				  		        				  /*set call status to waiting until will receive answer from contact person*/
+				  		        				  p.setCallMe("waiting");
+				  		        				  
+				  		        				  if(threads[i].receiveMessage().equals("controled"))
+				  		        					  p.setCallMe("Ok");
+				  		        			  }
+				  		        		  }
+				  		        		  else if(p.returnCallMe().equals("Ok"))
+				  		        			  toCallPersons.remove(p);
+				  		        	  }
+			                  }
+  		        	  }
+				try {
+					this.sleep(60*1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				}
+			}
+		};
+		monitorNotificationThread.start();
+		
+	}
+	
+	
 	
 }

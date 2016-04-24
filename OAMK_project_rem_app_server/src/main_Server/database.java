@@ -160,7 +160,7 @@ public class database {
 	private boolean updateMyData(String s) {
 		int id = Integer.parseInt(this.showStringNumber(s, 1));
 		if(id == person.returnID()){
-			System.out.println("Everything is correct the ids are the same");
+			//System.out.println("Everything is correct the ids are the same");
 		
 			person.setName(this.showStringNumber(s, 2));
 			person.setSurname(this.showStringNumber(s, 3));
@@ -743,7 +743,7 @@ public class database {
 
 				}
 	}catch(SQLException e){
-		System.out.println("medicine chyba "+e);
+		System.out.println("medicine error "+e);
 	}
 		return med;
 	}
@@ -799,9 +799,9 @@ public class database {
 	 * @param nowTime
 	 * @return
 	 */
-	public ArrayList<Person> controlNotifications(String TodayDate, String nowTime) {
+	public void controlNotifications(String TodayDate, String nowTime) {
 
-		ArrayList<Person> personsList = new ArrayList<Person>();
+		//ArrayList<Person> personsList = new ArrayList<Person>();
 		try (Connection connection = DriverManager.getConnection(url, username, password)) {
 		       connect = connection;
 			   stmtNotifications = connect.createStatement();
@@ -828,14 +828,17 @@ public class database {
 				   			if(c == 2 || c == 0){
 				   				//System.out.println("critical status c = "+c+" not. time +10 = "+n.returnNotificationTimePlusMin(10));
 				   				if(n.returnNotificationStatus().equals("critical")){
-									   personsList.add(this.criticalContactPersonList(n.returnIdTimetable()));
-									   n.setNotificationStatus("call CP");
+									   //personsList.add(this.criticalContactPersonList(n.returnIdTimetable()));
+									  //TODO make update to call CP status 
+									   this.updateNotifications(TodayDate, n.returnNotificationTime(), "call CP");
+									   //n.setNotificationStatus("call CP");
 				   				}
 				   			}
 				   			else{
 				   				/*if is NOW TIME >= (notification time + 5 minutes)*/
 				   				c = odc.compareTimes(n.returnNotificationTimePlusMin(5), nowTime);
 				   				if(c == 2 || c == 0){
+				   					if(n.returnNotificationStatus().equals("active"))
 				   					//System.out.println("updating critical status c = "+c+" not. time +5 = "+n.returnNotificationTimePlusMin(5));
 				   					this.updateNotifications(TodayDate, n.returnNotificationTime(), "critical");
 				   				}
@@ -863,29 +866,59 @@ public class database {
 		   } catch (ClassNotFoundException e) {
 		       throw new IllegalStateException("Cannot find the driver in the classpath!", e);
 		   }
-		return personsList;
+	//	return personsList;
 	}
 	/**
 	 * 
 	 * @return
 	 */
-	private Person criticalContactPersonList(int id) {
-		Person p = new Person();
-		
-		try{
-			String sql = "select * from remmem_app.contactpersonlist where id_ContactPerson =(select id_ContactPerson from remmem_app.userslist where id =(select id_user from remmem_app.all_timetables where id_timetable = '"+id+"'))";
-			ResultSet rs = stmtNotifications.executeQuery(sql);
-			while (rs.next()){
-				p.setID(rs.getInt("id_ContactPerson"));
-				p.setName(rs.getString("name"));
-				p.setSurname(rs.getString("surname"));
-				p.setSex(rs.getString("sex"));
-				p.setTelNumber(rs.getString("tel_number"));
-			}
+	public ArrayList<Person> toCallContactPersonList() {
+		ArrayList<Person> pList = new ArrayList<Person>();
+		ArrayList<notification> ALN = new ArrayList<notification>();
+		OurDateClass now = new OurDateClass(new Date());
+		Statement st;
+		try (Connection connection = DriverManager.getConnection(url, username, password)) {
+				st = connection.createStatement();
+				System.out.println("Look for CP notifications");
+				String SQL = "SELECT * FROM remmem_app.notification_timetable where date = '"+now.returnDate()+"' and  status = 'call CP'";
+				ResultSet rs = st.executeQuery(SQL);
+				while (rs.next()){
+					notification not = new notification();
+					not.setNotificationDate(rs.getString("date"));
+					not.setNotificationTime(rs.getString("time"));
+					not.setNotificationStatus(rs.getString("status"));
+					not.setID_table(rs.getInt("id_timetable"));
+					ALN.add(not);
+				}
+				
+				
+			for(notification n : ALN){	
+				System.out.println("CP not "+ALN.indexOf(n));
+				String sql = "select * from remmem_app.contactpersonlist where id_ContactPerson =(select id_ContactPerson from remmem_app.userslist where id =(select id_user from remmem_app.all_timetables where id_timetable = '"+n.returnIdTimetable()+"'))";
+				ResultSet rs1 = st.executeQuery(sql);
+				while (rs1.next()){
+					Person p = new Person();
+					p.setID(rs1.getInt("id_ContactPerson"));
+					p.setName(rs1.getString("name"));
+					p.setSurname(rs1.getString("surname"));
+					p.setSex(rs1.getString("sex"));
+					p.setTelNumber(rs1.getString("tel_number"));
+					p.setCallMe("toCall");
+					pList.add(p);
+					}
+				}
+			st.close();
+			connection.close();
 			}catch(SQLException e){
-				System.out.println("notification chyba "+e);
+				System.out.println("notification error "+e);
 			}
-		return p;
+		try {
+		       Class.forName("com.mysql.jdbc.Driver");
+		   } catch (ClassNotFoundException e) {
+		       throw new IllegalStateException("Cannot find the driver in the classpath!", e);
+		   }
+
+		return pList;
 	}
 	/**
 	 * 

@@ -220,4 +220,7 @@ public class CommandsForServerCommunication {
 	public Person returnUser(){
 		return this.user;
 	}
+	public database returnDatabase(){
+		return this.db;
+	}
 }

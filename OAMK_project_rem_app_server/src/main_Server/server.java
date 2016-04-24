@@ -1,30 +1,30 @@
 package main_Server;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
 import java.util.Date;
-
 import javax.swing.*;
 import ConsolePackage.TextAreaOutputStream;
-import person.Person;
-
 /**
 *
 * @author juraj
 */
 
-public class server {
+public class server implements ActionListener{
 	
 	private ServerSocket providerSocket;
-	private String message;
 	private database db = new database();
-	ArrayList<Person> toCallPersons = new ArrayList<Person>();
+	Boolean runningServer = false;
+	JButton disconect = new JButton("Disconnect");
+	JButton reset = new JButton("Reset server");
+	Socket clientSocket = null;
 	/**
 	 * Constructor 
 	 */
 	server(){
-		
+		runningServer =true;
 	}
 	
 	/**
@@ -34,22 +34,17 @@ public class server {
 	
 		JFrame frameServer = new JFrame("Server");
 		frameServer.setLayout(new BorderLayout());
-		
 		JTextArea ta = new JTextArea();
         TextAreaOutputStream taos = new TextAreaOutputStream( ta, 160 );
         PrintStream ps = new PrintStream(taos);
         System.setOut( ps );
         System.setErr( ps );
-        
         frameServer.pack();
-        
         frameServer.add(new JLabel("Output from server"), BorderLayout.PAGE_START);
         frameServer.add(new JScrollPane(ta), BorderLayout.CENTER);
 		frameServer.add(rightPanel(), BorderLayout.LINE_END);
 		frameServer.add(new JLabel("OAMK, Remme app"), BorderLayout.PAGE_END);
-		
 		frameServer.setSize(800, 500);
-		
 		frameServer.setVisible(true);
 		frameServer.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	}
@@ -61,44 +56,32 @@ public class server {
 	private JPanel rightPanel(){
 		JPanel panel = new JPanel();
 		panel.setLayout(new FlowLayout());
-		
-		JButton disconect = new JButton("Disconnect");
-		JButton reset = new JButton("Reset server");
-		
 		panel.add(disconect);
 		panel.add(reset);
-		//TODO Buttons actionListeners
-		//TODO "disconect" buttons loop for arraylist and close all connections in this loop then close server 
-		//TODO "reset: button loop for arraylist and close all connections in this loop then close server and then make the new runServer method.
+		 disconect.addActionListener(this);
+		 reset.addActionListener(this);
 		
 		return panel;	
 	}
 	
+
 	
+	
+	/**
+	 * method forr monitoring notifications saved in database 
+	 */
 	void MonitoringNotifications(){
-		//TODO  New thread with endless loop which will control actual time and compare with arrayList of notifications id database
+		/* New thread with endless loop which will control actual time and compare with arrayList of notifications id database*/
 		Thread monitorNotificationThread = new Thread(){
 			
 			public void run(){
-				while(true){
+				while(runningServer){
 					System.out.println("Updating the notification database...");
 				OurDateClass now = new OurDateClass(new Date());
-				ArrayList<Person> UserToBeNotify = new ArrayList<Person>();
-				UserToBeNotify = db.controlNotifications(now.returnDate(), now.returnTime());
-				
-				for(Person p : UserToBeNotify){
-					System.out.println("Person set to call status");
-					p.setCallMe("toCall");
-					if(!toCallPersons.equals(p)){
-						System.out.println("person to call"+p.returnName());
-						toCallPersons.add(p);
-					}
-						
-				}					
+				db.controlNotifications(now.returnDate(), now.returnTime());				
 				try {
-					this.sleep(60*1000);
+					Thread.sleep(60*1000);
 				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 				}
@@ -112,46 +95,65 @@ public class server {
 	 * Start the server and make arraylist of connection everytime when new connection start it like the new clientThread 
 	 */
 	void runServer(){
-		
-		//TODO open database 
-		
+
 	try{
-		/*creating a server socket */
-		Socket clientSocket = null;
 		final int maxClientsCount = 10;
 		final clientThread[] threads = new clientThread[maxClientsCount];
 		 int portNumber = 2004;
 		 providerSocket = new ServerSocket(portNumber);
-		
 		/*wait for connection*/
 		System.out.println("Server is running...");
-		System.out.println("Waiting for connection...");
+		System.out.println("Waiting for new connections...");
 		
 		
-		 while (true) {
-		      try {
+		 while (runningServer) {
 		        clientSocket = providerSocket.accept();
 		        int i = 0;
 		        for (i = 0; i < maxClientsCount; i++) {
 		          if (threads[i] == null) {
-		            (threads[i] = new clientThread(clientSocket, threads, i, toCallPersons)).start();
+		            (threads[i] = new clientThread(clientSocket, threads, i)).start();
 		            break;
 		          }
 		        }
 		        if (i == maxClientsCount) {
-		          PrintStream os = new PrintStream(clientSocket.getOutputStream());
-		          os.println("Server too busy. Try later.");
+		          ObjectOutputStream os = new ObjectOutputStream(clientSocket.getOutputStream());
+		          os.writeObject("Server too busy. Try later.");
 		          os.close();
 		          clientSocket.close();
 		        }
-		      } catch (IOException e) {
-		        System.out.println(e);
-		      }
 		    }
 
 		}catch( IOException ioException){
-			ioException.printStackTrace();
+			
 		}
 	}
+	
+	
+	private void disconnectServer(){
+		System.out.println("Closing socket....");
+		try {
+			runningServer = false;
+			providerSocket.close();
+			if(providerSocket.isClosed())
+				System.out.println("Server connection has been close");
+			
+		} catch (IOException e) {
+
+		}
 		
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent arg0) {
+		if(disconect ==(JButton)arg0.getSource())
+			this.disconnectServer();
+		else if(reset == (JButton)arg0.getSource()){
+			System.out.println("Reseting server....");
+			this.disconnectServer();
+			this.runServer();
+			this.MonitoringNotifications();
+		}
+		
+	}
+	
 }
