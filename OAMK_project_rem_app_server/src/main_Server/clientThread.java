@@ -19,10 +19,10 @@ public class clientThread extends Thread{
 	private ObjectInputStream in;
 	private String message;
 	private CommandsForServerCommunication commands = null;
-    private String clientName;
+    public String clientName;
     private final clientThread[] threads;
     private int maxClientsCount;
-    private ArrayList<Person> toCallPersons;
+    
     private boolean usersDataLoaded = false;
     private boolean test = false;
  /**
@@ -57,6 +57,7 @@ public class clientThread extends Thread{
 			out.flush();
 			in = new ObjectInputStream(connection.getInputStream());
 			sendMessage("1.Welcome");
+			//controlNotifications();
 			/*The two parts communicate via the input and output stream*/
 			do{
 				try{
@@ -83,21 +84,21 @@ public class clientThread extends Thread{
 		                	  //TODO make new message for update notifications 
 		                	  //TODO make only local list of persons and read data from here and save data to this list too 
 		                	// if(!message.equals("Log Out"))
-		                	  if(usersDataLoaded)
-		                		  test=true;
+		                	//  if(usersDataLoaded)
+		                	//	  test=true;
 		                	  
-		                	  if(test)
-		                		  controlNotifications();
+		                	//  if(test)
+		                		  
 		                	  
 		                		  	  
 		               }
 					 }
 					}
-		        }catch(ClassNotFoundException classnot){
+		        }catch(ClassNotFoundException | java.io.StreamCorruptedException classnot){
 		                	  
 					 }
 				}while(!message.equals("Log Out"));
-			synchronized(this){
+	/*		synchronized(this){
 				  for (int i = 0; i < maxClientsCount; i++) {
 			          if (threads[i] != null && threads[i] != this
 			              && threads[i].clientName != null) {
@@ -105,7 +106,7 @@ public class clientThread extends Thread{
 			          }
 			        }
 			}
-			
+	*/		
 			synchronized (this) {
 		        for (int i = 0; i < maxClientsCount; i++) {
 		          if (threads[i] == this) {
@@ -137,7 +138,7 @@ public class clientThread extends Thread{
  			String msg = (String)in.readObject();
  			System.out.println("Server received < "+msg);
 			return msg;
-		} catch (ClassNotFoundException e) {
+		} catch (ClassNotFoundException | java.io.StreamCorruptedException e ) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -153,11 +154,13 @@ public class clientThread extends Thread{
 	 */
 	public void sendMessage(String msg){
 		try{
+			if(connection.isConnected()){
 			out.writeObject(msg);
 			out.flush();
 			System.out.println("Server sending >"+msg);
+			}
 		}catch(IOException ioException){
-			ioException.printStackTrace();
+		//	ioException.printStackTrace();
 		}
 	}
 	/**
@@ -187,49 +190,7 @@ public class clientThread extends Thread{
 	public CommandsForServerCommunication returnCommandsForCommunication(){
 		return this.commands;
 	}
-	
-	private void controlNotifications(){
-		//TODO  New thread with endless loop which will control actual time and compare with arrayList of notifications id database
-		Thread monitorNotificationThread = new Thread(){
-			
-			public void run(){
-				while(true){
-						for (int i = 0; i < maxClientsCount; i++) {
-			                  if (threads[i] != null && threads[i].clientName != null && threads[i].clientName.equals("client_"+i)){
-			                	  Person person = threads[i].returnCommandsForCommunication().returnUser();
-			                	  toCallPersons = threads[i].returnCommandsForCommunication().returnDatabase().toCallContactPersonList();
-				  		        	  for(Person p : toCallPersons){
-				  		        		  System.out.println(p.returnName());
-				  		        		  if(p.returnCallMe().equals("toCall")){
-				  		        			  if(person.returnName().equals(p.returnName()) && person.returnSurname().equals(p.returnSurname()) && person.returnTelNumber().equals(p.returnTelNumber())){
-				  		        				  /*send message to user to control his/her contact person*/
-				  		        				  System.out.println("Sending message to contact person "+p.returnName());
-				  		        				  sendMessage("controlCP");
-				  		        				  /*set call status to waiting until will receive answer from contact person*/
-				  		        				  p.setCallMe("waiting");
-				  		        				  
-				  		        				  if(threads[i].receiveMessage().equals("controled"))
-				  		        					  p.setCallMe("Ok");
-				  		        			  }
-				  		        		  }
-				  		        		  else if(p.returnCallMe().equals("Ok"))
-				  		        			  toCallPersons.remove(p);
-				  		        	  }
-			                  }
-  		        	  }
-				try {
-					this.sleep(60*1000);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				}
-			}
-		};
-		monitorNotificationThread.start();
 		
-	}
-	
 	
 	
 }

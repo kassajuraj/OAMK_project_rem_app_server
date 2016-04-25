@@ -4,9 +4,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.Date;
 import javax.swing.*;
 import ConsolePackage.TextAreaOutputStream;
+import person.Person;
 /**
 *
 * @author juraj
@@ -90,6 +92,9 @@ public class server implements ActionListener{
 		monitorNotificationThread.start();
 		
 	}
+	final int maxClientsCount = 10;
+	final clientThread[] threads = new clientThread[maxClientsCount];
+	
 	
 	/**
 	 * Start the server and make arraylist of connection everytime when new connection start it like the new clientThread 
@@ -97,14 +102,13 @@ public class server implements ActionListener{
 	void runServer(){
 
 	try{
-		final int maxClientsCount = 10;
-		final clientThread[] threads = new clientThread[maxClientsCount];
+		
 		 int portNumber = 2004;
 		 providerSocket = new ServerSocket(portNumber);
 		/*wait for connection*/
 		System.out.println("Server is running...");
 		System.out.println("Waiting for new connections...");
-		
+		this.controlNotifications();
 		
 		 while (runningServer) {
 		        clientSocket = providerSocket.accept();
@@ -122,7 +126,6 @@ public class server implements ActionListener{
 		          clientSocket.close();
 		        }
 		    }
-
 		}catch( IOException ioException){
 			
 		}
@@ -132,6 +135,13 @@ public class server implements ActionListener{
 	private void disconnectServer(){
 		System.out.println("Closing socket....");
 		try {
+			
+			for (int i = 0; i < maxClientsCount; i++){ 
+		        if(threads[i].isAlive()){  
+		        	threads[i].destroy();
+		          	threads[i] = null;
+		        }
+			 }
 			runningServer = false;
 			providerSocket.close();
 			if(providerSocket.isClosed())
@@ -155,5 +165,90 @@ public class server implements ActionListener{
 		}
 		
 	}
+	
+	
+	/**
+	 * 
+	 */
+	public void controlNotifications(){
+		/*  New thread with endless loop which will control actual time and compare with arrayList of notifications id database*/
+		Thread monitorNotificationThread = new Thread(){
+			
+			public void run(){
+				ArrayList<Person> toCallPersons = new ArrayList <Person>();
+				int countOfLoops = 0;
+				while(true){
+					
+					ArrayList<Person> arp = null;
+								if(countOfLoops==15){  // Every 15 loops remove all persons in loop which have "CallMe" status "waiting"
+									countOfLoops =0;
+									for(Person prsn : toCallPersons)
+										if(prsn.returnCallMe().equals("waiting"))
+											toCallPersons.remove(prsn);
+								}else{
+									if(toCallPersons.isEmpty())
+										System.out.println("persons list is empty");
+									else{
+									System.out.println("Minute "+countOfLoops+" person list contains");
+									for(Person prsn : toCallPersons)
+										System.out.println(prsn.returnName()+" "+prsn.returnSurname()+" "+prsn.returnCallMe());
+									System.out.println("------------------------");
+									}
+								}
+					/* Every loop increment counter of loops and set found to false*/			
+					boolean found = false;
+					countOfLoops++;
+					try{	
+						for (int i = 0; i < maxClientsCount; i++) {
+			                  if (threads[i] != null && threads[i].clientName != null && threads[i].clientName.equals("client_"+i)){
+			                	  if(arp == null)
+			                		  arp = threads[i].returnCommandsForCommunication().returnDatabase().toCallContactPersonList();
+			                	  /*Add persons from "arp" list recorded from database to "toCallPersons" list if the person is not in this list yet*/
+			                	  for(Person per : arp){
+			                		  if(toCallPersons.isEmpty())
+		                			  		toCallPersons.add(per); //if empty list add person
+			                		  else{
+			                			  for(Person user : toCallPersons){ // if not empty then compare person from "arp" list and "toCallPersons" 
+			                				  if(user.returnName().equals(per.returnName()) && user.returnSurname().equals(per.returnSurname()) && user.returnTelNumber().equals(per.returnTelNumber())){
+			                					  found = true;
+			                					  break;
+			                				  }
+			                			  	}
+			                		  		if(found == false)// if not found the person from "arp" list in "toCallPerons" list then add person 
+			                		  			toCallPersons.add(per); 
+			                		  	}
+			                	  }
+			                	  /*Find person in list and connection with server if connection exists then send message and change "CallMe" status in person*/
+			                	  Person person = threads[i].returnCommandsForCommunication().returnUser();
+			                	  for(Person p : toCallPersons){
+				  		        		  if(p.returnCallMe().equals("toCall")){
+				  		        			  if(person != null)
+				  		        				  if(person.returnName().equals(p.returnName()) && person.returnSurname().equals(p.returnSurname()) && person.returnTelNumber().equals(p.returnTelNumber())){
+				  		        					  /*send message to user to control his/her contact person*/
+//				  		        					  System.out.println("Sending message to contact person "+p.returnName()+" to client name "+ threads[i].clientName);
+				  		        						threads[i].sendMessage("controlCP");
+				  		        					  p.setCallMe("waiting");
+				  		        			  }
+				  		        		  }
+				  		        	  }
+			                  }
+  		        	  }
+					}catch(java.lang.NullPointerException | java.util.ConcurrentModificationException e){
+						
+					}
+				try {
+					Thread.sleep(60*1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+					
+				}
+			}
+		};
+		monitorNotificationThread.start();
+		
+	}
+
 	
 }

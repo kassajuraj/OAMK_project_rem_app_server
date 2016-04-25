@@ -810,9 +810,12 @@ public class database {
 			   /*Make arrayList of notifications with today date*/
 			   ArrayList<notification> todaysNotifications = this.selectTodaysNotifications(TodayDate);   
 			   for(notification n : todaysNotifications){
-				   /*If was answer to take medicine "No" then change status to "critical" */
-				   if(n.returnNotificationStatus().equals("No"))
-					   n.setNotificationStatus("critical");
+				   /*If was answer to take medicine "No" then change status to "waiting" and change time of notification +5 min*/
+				   if(n.returnNotificationStatus().equals("No")){
+					   n.setNotificationStatus("delayed");
+					   this.updateNotifications(TodayDate, n.returnNotificationTimePlusMin(5), "delayed");
+					   //n.setNotificationTime(n.returnNotificationTimePlusMin(5));
+				   }
 				   /*In arraylist of todays notifications look for notifications status and control time if is status "new" or "waiting" or "active" or "critical" */
 				   if(!n.returnNotificationStatus().equals("outdated") && !n.returnNotificationStatus().equals("Ok") /*|| n.returnNotificationStatus().equals("active") || n.returnNotificationStatus().equals("critical")*/){
 					   /*if is NOW TIME >= (notification time + 30 minutes)*/
@@ -838,7 +841,7 @@ public class database {
 				   				/*if is NOW TIME >= (notification time + 5 minutes)*/
 				   				c = odc.compareTimes(n.returnNotificationTimePlusMin(5), nowTime);
 				   				if(c == 2 || c == 0){
-				   					if(n.returnNotificationStatus().equals("active"))
+				   					if(n.returnNotificationStatus().equals("active") || n.returnNotificationStatus().equals("delayed"))
 				   					//System.out.println("updating critical status c = "+c+" not. time +5 = "+n.returnNotificationTimePlusMin(5));
 				   					this.updateNotifications(TodayDate, n.returnNotificationTime(), "critical");
 				   				}
@@ -879,7 +882,7 @@ public class database {
 		Statement st;
 		try (Connection connection = DriverManager.getConnection(url, username, password)) {
 				st = connection.createStatement();
-				System.out.println("Look for CP notifications");
+				//System.out.println("Look for CP notifications");
 				String SQL = "SELECT * FROM remmem_app.notification_timetable where date = '"+now.returnDate()+"' and  status = 'call CP'";
 				ResultSet rs = st.executeQuery(SQL);
 				while (rs.next()){
