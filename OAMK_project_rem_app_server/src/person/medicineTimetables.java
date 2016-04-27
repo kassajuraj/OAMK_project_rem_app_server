@@ -61,7 +61,11 @@ public class medicineTimetables {
 	public medicine returnMedicine(){
 		return this.medicine;
 	}
-	
+	/**
+	 * 
+	 * @param s
+	 * @return
+	 */
 	public String returnDate(String s){
 		if(s.equals("from"))
 			return this.dateFrom;
@@ -70,7 +74,11 @@ public class medicineTimetables {
 		
 		return null;
 	}
-	
+	/**
+	 * 
+	 * @param s
+	 * @return
+	 */
 	public String returnTime(String s){
 		if(s.equals("from"))
 			return this.timeFrom;
@@ -79,14 +87,22 @@ public class medicineTimetables {
 		
 		return null;
 	}
-	
+	/**
+	 * 
+	 * @param arg
+	 * @param string
+	 */
 	public void setDate(String arg, String string){
 		if(arg.equals("from"))
 			this.dateFrom = string;
 		else if(arg.equals("to"))
 			this.dateUntil = string;	
 	}
-	
+	/**
+	 * 
+	 * @param arg
+	 * @param string
+	 */
 	public void setTime(String arg, String string){
 		if(arg.equals("from"))
 			this.timeFrom = string;
@@ -95,7 +111,10 @@ public class medicineTimetables {
 		
 		
 	}
-
+	/**
+	 * 
+	 * @param med
+	 */
 	public void setMedicine(medicine med) {
 		this.medicine = med; 
 		

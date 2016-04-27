@@ -57,7 +57,6 @@ public class clientThread extends Thread{
 			out.flush();
 			in = new ObjectInputStream(connection.getInputStream());
 			sendMessage("1.Welcome");
-			//controlNotifications();
 			/*The two parts communicate via the input and output stream*/
 			do{
 				try{
@@ -80,17 +79,6 @@ public class clientThread extends Thread{
 		                	  }
 		                	  else
 		                		  sendMessage(commands.mainCommandsForCommunication(message));
-		                	  
-		                	  //TODO make new message for update notifications 
-		                	  //TODO make only local list of persons and read data from here and save data to this list too 
-		                	// if(!message.equals("Log Out"))
-		                	//  if(usersDataLoaded)
-		                	//	  test=true;
-		                	  
-		                	//  if(test)
-		                		  
-		                	  
-		                		  	  
 		               }
 					 }
 					}
@@ -98,7 +86,7 @@ public class clientThread extends Thread{
 		                	  
 					 }
 				}while(!message.equals("Log Out"));
-	/*		synchronized(this){
+		synchronized(this){
 				  for (int i = 0; i < maxClientsCount; i++) {
 			          if (threads[i] != null && threads[i] != this
 			              && threads[i].clientName != null) {
@@ -106,7 +94,7 @@ public class clientThread extends Thread{
 			          }
 			        }
 			}
-	*/		
+		
 			synchronized (this) {
 		        for (int i = 0; i < maxClientsCount; i++) {
 		          if (threads[i] == this) {

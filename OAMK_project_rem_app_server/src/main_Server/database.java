@@ -569,14 +569,11 @@ public class database {
 	 * @param messageFromEditContactPerson form "#EditContactPerson;id;nameContactPerson;surnameContactPerson;sexContactPerson;tel.NumberContactPerson"
 	 */
 	private void makeContactPerson()throws SQLException{
-
-
 			/*if not found then insert new contact person*/
 			System.out.println("Inserting records into the 'contactpersonlist' table...");
 			String sqlI = "INSERT INTO `remmem_app`.`contactpersonlist` (`name`, `surname`, `sex`, `tel_number`) VALUES ('"+person.returnContactPerson().returnName()+"', '"+person.returnContactPerson().returnSurname()+"', '"+person.returnContactPerson().returnSex()+"', '"+person.returnContactPerson().returnTelNumber()+"')";
 			stmt.executeUpdate(sqlI);
 			System.out.println("Contact person has been inserted...");
-
 	}
 	/**
 	 * 
@@ -800,8 +797,6 @@ public class database {
 	 * @return
 	 */
 	public void controlNotifications(String TodayDate, String nowTime) {
-
-		//ArrayList<Person> personsList = new ArrayList<Person>();
 		try (Connection connection = DriverManager.getConnection(url, username, password)) {
 		       connect = connection;
 			   stmtNotifications = connect.createStatement();
@@ -814,14 +809,12 @@ public class database {
 				   if(n.returnNotificationStatus().equals("No")){
 					   n.setNotificationStatus("delayed");
 					   this.updateNotifications(TodayDate, n.returnNotificationTimePlusMin(5), "delayed");
-					   //n.setNotificationTime(n.returnNotificationTimePlusMin(5));
 				   }
 				   /*In arraylist of todays notifications look for notifications status and control time if is status "new" or "waiting" or "active" or "critical" */
-				   if(!n.returnNotificationStatus().equals("outdated") && !n.returnNotificationStatus().equals("Ok") /*|| n.returnNotificationStatus().equals("active") || n.returnNotificationStatus().equals("critical")*/){
+				   if(!n.returnNotificationStatus().equals("outdated") && !n.returnNotificationStatus().equals("Ok")){
 					   /*if is NOW TIME >= (notification time + 30 minutes)*/
 					   c = odc.compareTimes(n.returnNotificationTimePlusMin(30), nowTime);
 				   		if(c == 2 || c == 0){
-				   			//System.out.println("updating outdated status c = "+c+" not. time +30 = "+n.returnNotificationTimePlusMin(30));
 				   			/*update notification status to "outdated" */
 				   			this.updateNotifications(TodayDate, n.returnNotificationTime(), "outdated");
 				   		}
@@ -829,12 +822,8 @@ public class database {
 				   			/*if is NOW TIME >= (notification time + 10 minutes)*/
 				   			c = odc.compareTimes(n.returnNotificationTimePlusMin(10), nowTime);
 				   			if(c == 2 || c == 0){
-				   				//System.out.println("critical status c = "+c+" not. time +10 = "+n.returnNotificationTimePlusMin(10));
 				   				if(n.returnNotificationStatus().equals("critical")){
-									   //personsList.add(this.criticalContactPersonList(n.returnIdTimetable()));
-									  //TODO make update to call CP status 
 									   this.updateNotifications(TodayDate, n.returnNotificationTime(), "call CP");
-									   //n.setNotificationStatus("call CP");
 				   				}
 				   			}
 				   			else{
@@ -842,7 +831,6 @@ public class database {
 				   				c = odc.compareTimes(n.returnNotificationTimePlusMin(5), nowTime);
 				   				if(c == 2 || c == 0){
 				   					if(n.returnNotificationStatus().equals("active") || n.returnNotificationStatus().equals("delayed"))
-				   					//System.out.println("updating critical status c = "+c+" not. time +5 = "+n.returnNotificationTimePlusMin(5));
 				   					this.updateNotifications(TodayDate, n.returnNotificationTime(), "critical");
 				   				}
 				   				else{
@@ -850,7 +838,6 @@ public class database {
 				   					c = odc.compareTimes(n.returnNotificationTime(), nowTime);
 				   					if(c == 2 || c == 0){
 				   						if(n.returnNotificationStatus().equals("waiting"))
-				   						//System.out.println("updating active status c = "+c+" not. time = "+n.returnNotificationTime());
 				   						this.updateNotifications(TodayDate, n.returnNotificationTime(), "active");
 				   					}
 					   		}
@@ -869,7 +856,6 @@ public class database {
 		   } catch (ClassNotFoundException e) {
 		       throw new IllegalStateException("Cannot find the driver in the classpath!", e);
 		   }
-	//	return personsList;
 	}
 	/**
 	 * 
@@ -882,7 +868,6 @@ public class database {
 		Statement st;
 		try (Connection connection = DriverManager.getConnection(url, username, password)) {
 				st = connection.createStatement();
-				//System.out.println("Look for CP notifications");
 				String SQL = "SELECT * FROM remmem_app.notification_timetable where date = '"+now.returnDate()+"' and  status = 'call CP'";
 				ResultSet rs = st.executeQuery(SQL);
 				while (rs.next()){
@@ -947,7 +932,6 @@ public class database {
 	 */
 	private ArrayList<notification> selectTodaysNotifications(String returnDate) {
 		ArrayList<notification> ALN = new ArrayList<notification>();
-		//System.out.println("selecting the notifications...");
 		try{
 			String sql = "SELECT * FROM remmem_app.notification_timetable where date = '"+returnDate+"'";
 			ResultSet rs = stmtNotifications.executeQuery(sql);
@@ -964,5 +948,4 @@ public class database {
 			}
 		return ALN;
 	}
-	
 }

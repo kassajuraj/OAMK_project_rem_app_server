@@ -22,6 +22,9 @@ public class server implements ActionListener{
 	JButton disconect = new JButton("Disconnect");
 	JButton reset = new JButton("Reset server");
 	Socket clientSocket = null;
+	final int maxClientsCount = 10;
+	final clientThread[] threads = new clientThread[maxClientsCount];
+
 	/**
 	 * Constructor 
 	 */
@@ -65,12 +68,8 @@ public class server implements ActionListener{
 		
 		return panel;	
 	}
-	
-
-	
-	
 	/**
-	 * method forr monitoring notifications saved in database 
+	 * method for monitoring notifications saved in database 
 	 */
 	void MonitoringNotifications(){
 		/* New thread with endless loop which will control actual time and compare with arrayList of notifications id database*/
@@ -89,13 +88,8 @@ public class server implements ActionListener{
 				}
 			}
 		};
-		monitorNotificationThread.start();
-		
+		monitorNotificationThread.start();		
 	}
-	final int maxClientsCount = 10;
-	final clientThread[] threads = new clientThread[maxClientsCount];
-	
-	
 	/**
 	 * Start the server and make arraylist of connection everytime when new connection start it like the new clientThread 
 	 */
@@ -131,7 +125,9 @@ public class server implements ActionListener{
 		}
 	}
 	
-	
+	/**
+	 * 
+	 */
 	private void disconnectServer(){
 		System.out.println("Closing socket....");
 		try {
@@ -165,10 +161,8 @@ public class server implements ActionListener{
 		}
 		
 	}
-	
-	
 	/**
-	 * 
+	 *method forr control notifications and sending message to contact person  
 	 */
 	public void controlNotifications(){
 		/*  New thread with endless loop which will control actual time and compare with arrayList of notifications id database*/
@@ -225,7 +219,6 @@ public class server implements ActionListener{
 				  		        			  if(person != null)
 				  		        				  if(person.returnName().equals(p.returnName()) && person.returnSurname().equals(p.returnSurname()) && person.returnTelNumber().equals(p.returnTelNumber())){
 				  		        					  /*send message to user to control his/her contact person*/
-//				  		        					  System.out.println("Sending message to contact person "+p.returnName()+" to client name "+ threads[i].clientName);
 				  		        						threads[i].sendMessage("controlCP");
 				  		        					  p.setCallMe("waiting");
 				  		        			  }
@@ -237,7 +230,7 @@ public class server implements ActionListener{
 						
 					}
 				try {
-					Thread.sleep(60*1000);
+					Thread.sleep(60*1000);	// after done then sleep for one mminute 
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -247,8 +240,5 @@ public class server implements ActionListener{
 			}
 		};
 		monitorNotificationThread.start();
-		
 	}
-
-	
 }

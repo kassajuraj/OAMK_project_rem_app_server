@@ -157,18 +157,26 @@ public class Person {
 	public medicineTimetables returnTimetable(int index){
 		return this.timetable.get(index);
 	}
-	
+	/**
+	 * 
+	 * @return
+	 */
 	public ArrayList<medicineTimetables> returnArrayListOfTimetables(){
 		return this.timetable;
 	}
-	
+	/**
+	 * 
+	 * @return
+	 */
 	public String returnCallMe(){
 		return this.callMe;
 	}
-	
+	/**
+	 * 
+	 * @param s
+	 */
 	public void setCallMe(String s){
 		this.callMe = s;
 	}
-	
-	
+
 }

@@ -30,14 +30,6 @@ public class CommandsForServerCommunication {
 	 * @return the command for the clientThread class and then this command will be return to server class
 	 */
 	public String mainCommandsForCommunication(String s){
-		//TODO switch for the calling the right method inside this class it will read only the first character from command string
-		/*
-		 * '~' = sign in 
-		 * '!' = make notification
-		 * '$' = register to the system
-		 * '#' = edit profile  
-		 * 	'%' = search medicine
-		 */
 		switch(s.charAt(0)){
 		
 		case '~' : s = this.commandsForSignIn(s); break;
@@ -50,7 +42,7 @@ public class CommandsForServerCommunication {
 		case '^' : s = this.updateUserProfile(s); break; 
 		case '&' : s = this.addNewmedicine(s);break;
 		default : s =  "invalid action"; break;
-			//TODO make message for edit my own profile where I can change my mail, password
+
 		}
 		
 		return s;
@@ -135,17 +127,11 @@ public class CommandsForServerCommunication {
 	 */
 	private String LookForNameOfMedicineInDatabase(String nameOfMedicine){
 		if(db.makeConnection('%', nameOfMedicine)){
-			//System.out.println("returning "+db.returnMessageToReturn());
 			return db.returnMessageToReturn();
-			//return "medicine found";
 		}
 		else{
-			//System.out.println("returning medicine does not exists in DB");
 			return "%medicineNames;";
 		}
-			
-		
-		//return "error";
 	}
 	/**
 	 * this method has commands for the registration new users to the system
